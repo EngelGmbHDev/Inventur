@@ -1,0 +1,234 @@
+// Gesamte Fachlogik. Kennt weder Workers, Node, D1 noch better-sqlite3.
+// req: { method, path, query, body, ip, token }
+// liefert { status, json } | { status, text, headers }
+import { hashPin, checkPin, makeToken, readToken } from './auth.js';
+
+const RUN = 1;                 // aktuell ein Durchgang; run_id ist für später vorgesehen
+const MAX_TRIES = 5;
+const BLOCK_MIN = 15;
+
+const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const json = (status, body) => ({ status, json: body });
+
+export async function handle(req, repo, env) {
+  const seg = req.path.replace(/^\/api\/?/, '').split('/').filter(Boolean);
+  const secret = env.TOKEN_SECRET;
+
+  if (seg[0] === 'login')  return login(req, repo, env);
+  if (seg[0] === 'state')  return json(200, { open: (await repo.getSetting('open')) === '1' });
+
+  const who = await readToken(req.token, secret);
+  if (!who) return json(401, { error: 'Anmeldung erforderlich' });
+
+  if (seg[0] === 'admin') {
+    if (who.role !== 'admin') return json(403, { error: 'Keine Berechtigung' });
+    return admin(seg.slice(1), req, repo);
+  }
+
+  if ((await repo.getSetting('open')) !== '1')
+    return json(503, { error: 'Die Inventur ist nicht freigegeben' });
+
+  if (seg[0] === 'tasks') return tasks(seg.slice(1), req, repo, who);
+  return json(404, { error: 'Unbekannte Anfrage' });
+}
+
+// ── Anmeldung ─────────────────────────────────────────────────────────────
+async function login(req, repo, env) {
+  if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
+
+  const blocked = await repo.isBlocked(req.ip);
+  if (blocked) return json(429, { error: `Zu viele Versuche. Bitte ${blocked} Min. warten.` });
+
+  const pin = String(req.body?.pin ?? '');
+  for (const role of ['admin', 'worker']) {
+    const rec = await repo.getAuth(role);
+    if (rec && await checkPin(pin, rec.hash, rec.salt)) {
+      await repo.clearAttempts(req.ip);
+      const worker = String(req.body?.worker ?? '').trim();
+
+      // Schritt 1: Code stimmt, Name fehlt noch — Liste ausgeben, noch kein Token
+      if (role === 'worker' && !worker)
+        return json(200, { needWorker: true, workers: await repo.listWorkers(RUN) });
+
+      const who = role === 'admin' ? 'admin' : worker;
+      return json(200, { token: await makeToken({ role, worker: who }, env.TOKEN_SECRET), role, worker: who });
+    }
+  }
+  await repo.bumpAttempt(req.ip, MAX_TRIES, BLOCK_MIN);
+  return json(401, { error: 'Code ungültig' });
+}
+
+// ── Aufgaben ──────────────────────────────────────────────────────────────
+async function tasks(seg, req, repo, who) {
+  if (seg.length === 0) return json(200, { tasks: await repo.listTasks(RUN), me: who.worker });
+
+  const n = Number(seg[0]);
+  if (!Number.isInteger(n)) return json(400, { error: 'Ungültige Aufgabennummer' });
+  const action = seg[1];
+
+  if (action === 'claim') {
+    const ok = await repo.claimTask(RUN, n, who.worker);
+    if (!ok) return json(409, { error: 'Aufgabe ist bereits vergeben' });
+    return json(200, { lines: await repo.getLines(RUN, n) });
+  }
+
+  const t = await repo.getTask(RUN, n);
+  if (!t) return json(404, { error: 'Aufgabe nicht gefunden' });
+  if (t.worker !== who.worker) return json(403, { error: 'Aufgabe gehört einem anderen Mitarbeiter' });
+
+  if (action === 'lines' && req.method === 'GET')
+    return json(200, { lines: await repo.getLines(RUN, n) });
+
+  if (action === 'lines' && req.method === 'POST') {
+    const upd = (req.body?.lines ?? [])
+      .filter((l) => Number.isInteger(l.id))
+      .map((l) => ({ id: l.id, menge: l.menge === null || l.menge === '' ? null : Number(l.menge) }))
+      .filter((l) => l.menge === null || Number.isFinite(l.menge));
+    await repo.saveLines(RUN, n, upd, now());
+    return json(200, { saved: upd.length });
+  }
+
+  if (action === 'item' && req.method === 'POST') {
+    const id = Number(req.body?.id);
+    const code = String(req.body?.itemcode ?? '').trim();
+    if (!Number.isInteger(id) || !code) return json(400, { error: 'Artikelnummer fehlt' });
+    if (code.length > 50) return json(400, { error: 'Artikelnummer zu lang' });
+    const ok = await repo.setItemcode(RUN, n, id, code);
+    return ok ? json(200, { ok: true }) : json(404, { error: 'Zeile nicht gefunden' });
+  }
+
+  if (action === 'add' && req.method === 'POST') {
+    const lagerplatz = String(req.body?.lagerplatz ?? '').trim();
+    const code = String(req.body?.itemcode ?? '').trim();
+    const menge = req.body?.menge === '' || req.body?.menge === null ? null : Number(req.body?.menge);
+    if (!lagerplatz || !code) return json(400, { error: 'Lagerplatz und Artikelnummer angeben' });
+    if (menge !== null && !Number.isFinite(menge)) return json(400, { error: 'Menge ungültig' });
+    const plaetze = await repo.lagerplaetze(RUN, n);
+    if (!plaetze.includes(lagerplatz)) return json(400, { error: 'Lagerplatz gehört nicht zu dieser Aufgabe' });
+    const id = await repo.addLine(RUN, n, lagerplatz, code, menge, now());
+    return json(200, { id });
+  }
+
+  if (action === 'remove' && req.method === 'POST') {
+    const id = Number(req.body?.id);
+    if (!Number.isInteger(id)) return json(400, { error: 'Zeile fehlt' });
+    const ok = await repo.removeLine(RUN, n, id);
+    return ok ? json(200, { ok: true }) : json(400, { error: 'Nur selbst erfasste Zeilen lassen sich entfernen' });
+  }
+
+  if (action === 'release') {
+    await repo.releaseTask(RUN, n, who.worker);
+    return json(200, { ok: true });
+  }
+
+  if (action === 'complete') {
+    const left = await repo.countEmpty(RUN, n);
+    if (left > 0 && !req.body?.force) return json(400, { error: `Noch offen: ${left} Zeilen`, left });
+    await repo.completeTask(RUN, n, who.worker, now());
+    return json(200, { ok: true });
+  }
+
+  return json(404, { error: 'Unbekannte Aktion' });
+}
+
+// ── Verwaltung ────────────────────────────────────────────────────────────
+async function admin(seg, req, repo) {
+  const cmd = seg[0];
+
+  if (cmd === 'status')
+    return json(200, {
+      open: (await repo.getSetting('open')) === '1',
+      ...(await repo.summary(RUN)),
+      tasks: await repo.listTasks(RUN),
+    });
+
+  if (cmd === 'open' && req.method === 'POST') {
+    const v = req.body?.open ? '1' : '0';
+    await repo.setSetting('open', v);
+    return json(200, { open: v === '1' });
+  }
+
+  if (cmd === 'pin' && req.method === 'POST') {
+    const role = req.body?.role === 'admin' ? 'admin' : 'worker';
+    const pin = String(req.body?.pin ?? '');
+    if (pin.length < (role === 'admin' ? 8 : 4)) return json(400, { error: 'Code zu kurz' });
+    const { hash, salt } = await hashPin(pin);
+    await repo.setAuth(role, hash, salt);
+    return json(200, { ok: true });
+  }
+
+  if (cmd === 'import' && req.method === 'POST') {
+    if (await repo.hasActivity(RUN))
+      return json(409, { error: 'Im Durchgang gibt es bereits vergebene oder abgegebene Aufgaben. Bitte zuerst leeren.' });
+    const parsed = parseCsv(String(req.body?.csv ?? ''));
+    if (parsed.error) return json(400, { error: parsed.error });
+    await repo.importRun(RUN, parsed.rows, req.body?.workers ?? []);
+    return json(200, { ...(await repo.summary(RUN)), problems: parsed.problems });
+  }
+
+  if (cmd === 'reset' && req.method === 'POST') {
+    await repo.setSetting('open', '0');
+    await repo.clearRun(RUN);
+    return json(200, { ok: true });
+  }
+
+  if (cmd === 'export') {
+    const rows = await repo.exportRows(RUN);
+    const head = 'aufgabe;lagerplatz;itemcode;menge;artikel_soll;status;gezaehlt_von;zeitpunkt\n';
+    const body = rows.map((r) => [
+      r.n, r.lagerplatz, r.itemcode,
+      r.menge === null ? '' : String(r.menge).replace('.', ','),
+      r.itemcode_soll ?? '',
+      r.added ? 'neu' : (r.itemcode_soll ? 'geaendert' : ''),
+      r.worker ?? '', r.counted_at ?? '',
+    ].join(';')).join('\n');
+    return {
+      status: 200,
+      text: '\uFEFF' + head + body,
+      headers: {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': `attachment; filename="inventur_${now().slice(0, 10)}.csv"`,
+      },
+    };
+  }
+
+  return json(404, { error: 'Unbekannter Befehl' });
+}
+
+// ── CSV: lagerplatz ; itemcode ; aufgabe_num ───────────────────────────────
+export function parseCsv(text) {
+  const raw = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter((l) => l.trim());
+  if (!raw.length) return { error: 'Datei ist leer' };
+
+  const delim = (raw[0].match(/;/g) || []).length >= (raw[0].match(/,/g) || []).length ? ';' : ',';
+  if (/lagerplatz/i.test(raw[0])) raw.shift();
+
+  const rows = [], problems = [];
+  const seen = new Map();
+
+  raw.forEach((line, i) => {
+    const c = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
+    const [lagerplatz, itemcode, aufgabe] = c;
+    const n = Number(aufgabe);
+    if (!lagerplatz || !itemcode || !Number.isInteger(n)) {
+      problems.push(`Zeile ${i + 1}: ${line.slice(0, 60)}`);
+      return;
+    }
+    const key = lagerplatz + '|' + itemcode;
+    if (seen.has(key)) problems.push(`Doppelt: ${lagerplatz} / ${itemcode} (Aufgaben ${seen.get(key)} und ${n})`);
+    else seen.set(key, n);
+    rows.push({ lagerplatz, itemcode, n });
+  });
+
+  if (!rows.length) return { error: 'Keine Zeile erkannt' };
+
+  // Ein Lagerplatz darf nicht in zwei Aufgaben landen
+  const lp = new Map();
+  for (const r of rows) {
+    if (lp.has(r.lagerplatz) && lp.get(r.lagerplatz) !== r.n)
+      problems.push(`Lagerplatz ${r.lagerplatz} in Aufgaben ${lp.get(r.lagerplatz)} und ${r.n}`);
+    lp.set(r.lagerplatz, r.n);
+  }
+
+  return { rows, problems: problems.slice(0, 50) };
+}

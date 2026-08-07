@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12161C">
+<title>Inventur</title>
+<style>
+/* Systemschriften: die Seite muss auch bei einem Balken LTE laden. */
+:root{
+  --bg:#E8EAED; --card:#fff; --ink:#12161C; --muted:#626A76; --line:#CDD2D8;
+  --signal:#FFC400; --ok:#0F7B4F; --warn:#B4341C;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 var(--sans);
+  -webkit-text-size-adjust:100%;overscroll-behavior-y:contain}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button{font:inherit;color:inherit;cursor:pointer}
+.hide{display:none !important}
+
+/* ── Kopfzeile ─────────────────────────────────────── */
+.bar{position:sticky;top:0;z-index:10;background:var(--ink);color:#fff;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 10px}
+.bar-row{display:flex;align-items:center;gap:12px}
+.bar h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.bar .sub{font:13px/1 var(--mono);color:#9AA3AF;margin-top:5px}
+.bar .grow{flex:1}
+.tape{height:6px;background:repeating-linear-gradient(-45deg,
+  var(--signal) 0 10px,#12161C 10px 20px)}
+
+.ghost{background:none;border:1px solid #3A424E;color:#fff;
+  border-radius:6px;padding:8px 12px;font-size:14px}
+.ghost:active{background:#252C36}
+
+/* ── Inhalt ────────────────────────────────────────── */
+main{padding:14px 14px calc(env(safe-area-inset-bottom) + 100px)}
+.note{color:var(--muted);font-size:14px;margin:0 0 14px}
+.err{background:#FDEBE7;border-left:4px solid var(--warn);color:#7A2413;
+  padding:10px 12px;border-radius:0 6px 6px 0;margin:0 0 14px;font-size:14px}
+
+/* ── Aufgabenliste ─────────────────────────────────── */
+.task{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-left:5px solid var(--signal);
+  border-radius:8px;padding:14px;margin-bottom:10px}
+.task .num{font:700 26px/1 var(--mono);min-width:44px}
+.task .rng{font:13px/1.5 var(--mono);color:var(--muted);flex:1}
+.task .rng b{color:var(--ink);font-weight:600}
+.task .cnt{font-size:13px;color:var(--muted);white-space:nowrap}
+.task[data-s="taken"],.task[data-s="done"]{border-left-color:var(--line);opacity:.55}
+.task[data-s="done"]{border-left-color:var(--ok)}
+.task[disabled]{cursor:default}
+.task .who{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+/* ── Zählzeilen ────────────────────────────────────── */
+.row{display:flex;align-items:center;gap:12px;background:var(--card);
+  border:1px solid var(--line);border-left:5px solid var(--line);
+  border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.row[data-s="dirty"]{border-left-color:var(--signal)}
+.row[data-s="saved"]{border-left-color:var(--ok)}
+.row .lp{font:600 19px/1.2 var(--mono);letter-spacing:.02em;flex:1;word-break:break-all}
+.row .ic{display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:3px 0 0;
+  font:13px/1.4 var(--mono);color:var(--muted);text-decoration:underline dotted;text-underline-offset:3px}
+.row .ic .pen{font-size:11px;opacity:.6}
+.row .icedit{width:100%;margin-top:4px;padding:8px;font:600 15px/1 var(--mono);
+  border:2px solid var(--ink);border-radius:6px;text-align:left}
+.tag{display:inline-block;margin-top:4px;padding:2px 7px;border-radius:4px;font:600 11px/1.6 var(--sans);
+  font-style:normal;letter-spacing:.03em;background:#F3E3A6;color:#5C4A00}
+.tag.neu{background:var(--ink);color:#fff}
+.row .rm{background:none;border:1px solid var(--line);border-radius:6px;
+  width:38px;height:38px;font-size:20px;color:var(--muted);flex:none}
+
+.addpane{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:14px;margin-top:16px}
+.addpane h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.addpane select,.addpane input{width:100%;padding:12px;margin-bottom:8px;background:#fff;
+  border:2px solid var(--line);border-radius:6px;font:15px/1 var(--mono)}
+.addpane select{font-family:var(--sans)}
+.addpane button{width:100%;background:var(--ink);color:#fff;border:none;border-radius:6px;
+  padding:13px;font-weight:600;font-size:15px}
+.row input{width:92px;padding:12px 8px;text-align:right;
+  font:600 21px/1 var(--mono);border:2px solid var(--line);border-radius:6px;background:#fff}
+.row input:focus{border-color:var(--ink);outline:none}
+
+/* ── Fußleiste ─────────────────────────────────────── */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);
+  border-top:1px solid var(--line);padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);
+  display:flex;align-items:center;gap:12px}
+.dock .stat{flex:1;font:13px/1.3 var(--mono);color:var(--muted)}
+.dock .stat b{display:block;font:600 17px/1.2 var(--sans);color:var(--ink)}
+.btn{background:var(--ink);color:#fff;border:none;border-radius:8px;
+  padding:15px 22px;font-weight:600;font-size:16px}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{background:var(--line);color:#8A93A0}
+.btn.wide{width:100%}
+
+/* ── Anmeldung ─────────────────────────────────────── */
+.pane{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
+.field{width:100%;padding:14px;font:600 20px/1 var(--mono);letter-spacing:.25em;
+  border:2px solid var(--line);border-radius:8px;margin-bottom:16px;background:#fff}
+select.field{letter-spacing:normal;font-family:var(--sans)}
+textarea.field{letter-spacing:normal;font-size:13px;min-height:150px;line-height:1.5}
+
+/* ── Verwaltung ────────────────────────────────────── */
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.kpi div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
+.kpi b{display:block;font:700 20px/1.2 var(--mono)}
+.kpi span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.switch{display:flex;align-items:center;gap:12px;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.switch .lbl{flex:1;font-weight:600}
+.switch .lbl span{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10px}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:20px;
+  font-size:14px;z-index:20;max-width:88vw;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-row">
+    <div>
+      <h1 id="hTitle">Inventur</h1>
+      <div class="sub" id="hSub">Anmeldung</div>
+    </div>
+    <div class="grow"></div>
+    <button class="ghost hide" id="btnBack">Zurück</button>
+  </div>
+</header>
+<div class="tape hide" id="tape"></div>
+
+<main>
+  <!-- Anmeldung -->
+  <section id="vLogin">
+    <div class="pane">
+      <label for="fPin">Zugangscode</label>
+      <input class="field" id="fPin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
+      <label for="fWorker">Wer zählt</label>
+      <select class="field" id="fWorker"></select>
+      <button class="btn wide" id="btnLogin">Anmelden</button>
+    </div>
+    <p class="note" style="margin-top:14px">Den Zugangscode erhalten Sie vor Beginn der Inventur von der Leitung.</p>
+  </section>
+
+  <!-- Aufgabenliste -->
+  <section id="vTasks" class="hide">
+    <p class="note" id="tasksNote"></p>
+    <div id="taskList"></div>
+  </section>
+
+  <!-- Zählung -->
+  <section id="vCount" class="hide">
+    <div id="lineList"></div>
+  </section>
+
+  <!-- Verwaltung -->
+  <section id="vAdmin" class="hide">
+    <div class="kpi">
+      <div><b id="kTasks">0</b><span>Aufgaben</span></div>
+      <div><b id="kLines">0</b><span>Zeilen</span></div>
+      <div><b id="kDone">0</b><span>abgegeben</span></div>
+      <div><b id="kEmpty">0</b><span>offen</span></div>
+    </div>
+
+    <div class="switch">
+      <div class="lbl">Erfassung<span id="openState">gesperrt</span></div>
+      <button class="btn" id="btnOpen">Freigeben</button>
+    </div>
+
+    <h2>Aufgaben laden</h2>
+    <div class="pane">
+      <label for="fCsv">CSV: lagerplatz ; itemcode ; aufgabe_num</label>
+      <textarea class="field" id="fCsv" placeholder="01-A-01;12345;1&#10;01-A-02;12346;1"></textarea>
+      <label for="fWorkers">Namen der Mitarbeiter, einer pro Zeile</label>
+      <textarea class="field" id="fWorkers" style="min-height:80px"></textarea>
+      <button class="btn wide" id="btnImport">Laden und prüfen</button>
+    </div>
+
+    <h2>Code für Mitarbeiter</h2>
+    <div class="pane">
+      <input class="field" id="fNewPin" inputmode="numeric" placeholder="neuer Code" autocomplete="off">
+      <button class="btn wide" id="btnPin">Code ändern</button>
+    </div>
+
+    <h2>Ergebnis</h2>
+    <div class="pane">
+      <button class="btn wide" id="btnExport">CSV herunterladen</button>
+      <p class="note" style="margin:14px 0 0">Das Leeren löscht alle Aufgaben und alle erfassten Mengen.</p>
+      <button class="btn wide" id="btnReset" style="background:var(--warn);margin-top:10px">Durchgang leeren</button>
+    </div>
+  </section>
+</main>
+
+<div class="dock hide" id="dock">
+  <div class="stat" id="dockStat"></div>
+  <button class="btn" id="btnDone">Abgeben</button>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

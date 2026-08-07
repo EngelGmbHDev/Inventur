@@ -1,0 +1,16 @@
+name = "inventur"
+main = "worker/index.js"
+compatibility_date = "2026-08-07"
+
+# Statische Dateien aus public/ — die Bindung erlaubt env.ASSETS.fetch()
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "inventur"
+database_id = "ID-AUS-wrangler-d1-create-EINSETZEN"
+
+# TOKEN_SECRET wird als Secret gesetzt, nicht hier:
+#   wrangler secret put TOKEN_SECRET

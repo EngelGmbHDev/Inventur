@@ -1,0 +1,27 @@
+# Datenbank und Laufzeitdaten — gehören nie ins Repository
+data/
+*.db
+*.db-wal
+*.db-shm
+.wrangler/
+
+# Abhängigkeiten
+node_modules/
+
+# Geheimnisse: TOKEN_SECRET wird als Secret bzw. Umgebungsvariable gesetzt
+.env
+.env.*
+.dev.vars
+
+# Betriebssystem und Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*

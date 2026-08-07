@@ -1,0 +1,19 @@
+services:
+  inventur:
+    build: .
+    restart: unless-stopped
+    environment:
+      TOKEN_SECRET: ${TOKEN_SECRET:?openssl rand -hex 32}
+    volumes:
+      - ./data:/app/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.inventur.rule=Host(`inventur.example.de`)
+      - traefik.http.routers.inventur.entrypoints=websecure
+      - traefik.http.routers.inventur.tls.certresolver=le
+      - traefik.http.services.inventur.loadbalancer.server.port=8080
+    networks: [proxy]
+
+networks:
+  proxy:
+    external: true
