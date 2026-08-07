@@ -322,6 +322,13 @@ async function openAdmin() {
   show('vAdmin', 'Verwaltung', S.worker);
 }
 
+$('fCsvFile').onchange = async () => {
+  const file = $('fCsvFile').files[0];
+  if (!file) return;
+  $('fCsv').value = await file.text();
+  $('fCsvFile').value = '';
+};
+
 $('btnImport').onclick = async () => {
   const csv = $('fCsv').value;
   if (!csv.trim()) return toast('Bitte CSV einfügen');
