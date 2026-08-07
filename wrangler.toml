@@ -10,7 +10,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "inventur"
-database_id = "ID-AUS-wrangler-d1-create-EINSETZEN"
+database_id = "9014457d-7f26-4282-9767-af9557b51240"
 
 # TOKEN_SECRET wird als Secret gesetzt, nicht hier:
 #   wrangler secret put TOKEN_SECRET
