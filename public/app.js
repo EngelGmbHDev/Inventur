@@ -329,6 +329,13 @@ $('fCsvFile').onchange = async () => {
   $('fCsvFile').value = '';
 };
 
+$('fWorkersFile').onchange = async () => {
+  const file = $('fWorkersFile').files[0];
+  if (!file) return;
+  $('fWorkers').value = await file.text();
+  $('fWorkersFile').value = '';
+};
+
 $('btnImport').onclick = async () => {
   const csv = $('fCsv').value;
   if (!csv.trim()) return toast('Bitte CSV einfügen');
