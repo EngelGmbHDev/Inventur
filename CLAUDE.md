@@ -91,9 +91,15 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
 ## Business rules worth knowing before changing handlers.js
 
 - CSV import (`lagerplatz;itemcode;aufgabe_num`) rejects duplicate lagerplatz/itemcode pairs and
-  flags any lagerplatz that spans two tasks (`parseCsv` in handlers.js).
+  flags any lagerplatz that spans two tasks (`parseCsv` in handlers.js). `itemcode` may be empty —
+  that represents a lagerplatz that's expected to be empty (worker just confirms `menge=0`, or
+  corrects the itemcode in place if something is actually found there).
 - A task must be `open` to be claimed, and claiming is a single conditional UPDATE (`status='open'`
-  in the WHERE clause) so two workers racing for the same task can't both succeed.
+  in the WHERE clause) so two workers racing for the same task can't both succeed. The same UPDATE
+  also carries a `NOT EXISTS` check against `worker`'s other `taken` tasks, so a worker can only
+  ever have one active task at a time — must `complete` or `releaseTask` it before claiming another.
+  Re-requesting a claim on a task the worker already holds is not an error; it just returns that
+  task's lines.
 - If the item actually found at a lagerplatz differs from the import, the worker corrects the
   itemcode in place; the original expected value is preserved in `lines.itemcode_soll` (see
   `setItemcode`) so the export can still show what was expected (`artikel_soll`, status
@@ -103,3 +109,7 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   `menge=0` instead.
 - `completeTask` refuses to close a task with empty (`menge IS NULL`) lines unless the client
   passes `force`.
+- `releaseTask` ("Aufgabe verlassen" — for an accidentally claimed task) is destructive by design:
+  besides reopening the task, it deletes any `added=1` lines, restores `itemcode` from
+  `itemcode_soll` where set, and clears all `menge`/`counted_at` — the task goes back to exactly
+  its post-import state. This is different from `completeTask`, which keeps everything entered.

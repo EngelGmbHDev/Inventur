@@ -4,7 +4,7 @@ const S = {
   token: localStorage.getItem('inv.token') || '',
   role: localStorage.getItem('inv.role') || '',
   worker: localStorage.getItem('inv.worker') || '',
-  task: null, lines: [], queue: new Set(), timer: null, retry: null,
+  task: null, lines: [], queue: new Set(), timer: null, retry: null, adminTimer: null,
 };
 
 // ── Netzwerk ──────────────────────────────────────────────────────────────
@@ -41,14 +41,24 @@ function show(view, title, sub, opts = {}) {
   $('tape').classList.toggle('hide', view !== 'vCount');
   $('dock').classList.toggle('hide', view !== 'vCount');
   $('btnBack').classList.toggle('hide', !opts.back);
+  $('btnLogout').classList.toggle('hide', view === 'vLogin');
   window.scrollTo(0, 0);
 }
 
 function logout() {
+  clearInterval(S.adminTimer); S.adminTimer = null;
   localStorage.removeItem('inv.token');
   S.token = ''; S.role = ''; S.task = null;
   show('vLogin', 'Inventur', 'Anmeldung');
 }
+
+$('btnLogout').onclick = async () => {
+  if (S.task) {
+    await flush();
+    if (S.queue.size && !confirm('Es gibt noch nicht übertragene Zeilen. Trotzdem ausloggen?')) return;
+  }
+  logout();
+};
 
 // ── Anmeldung ─────────────────────────────────────────────────────────────
 $('btnLogin').onclick = async () => {
@@ -107,11 +117,8 @@ async function claim(n) {
     const d = await api(`/tasks/${n}/claim`);
     openCount(n, d.lines);
   } catch (e) {
-    if (e.status === 409) { toast('Aufgabe wurde bereits vergeben'); return openTasks(); }
-    if (e.status === 403) { toast(e.message); return openTasks(); }
-    // bereits von mir übernommen — einfach öffnen
-    try { const d = await api(`/tasks/${n}/lines`); return openCount(n, d.lines); }
-    catch { toast(e.message); }
+    toast(e.message);
+    openTasks();
   }
 }
 
@@ -139,7 +146,7 @@ function renderLines() {
       : (l.itemcode_soll ? `<em class="tag">Soll: ${esc(l.itemcode_soll)}</em>` : '');
     return `<div class="row" data-s="${st}" data-id="${l.id}">
       <span class="lp">${esc(l.lagerplatz)}
-        <button class="ic" data-edit="${l.id}">${esc(l.itemcode)}<span class="pen">✎</span></button>
+        <button class="ic" data-edit="${l.id}">${l.itemcode ? esc(l.itemcode) : 'kein Artikel erwartet'}<span class="pen">✎</span></button>
         ${tag}</span>
       <input inputmode="decimal" enterkeyhint="next" value="${val === '' ? '' : esc(String(val))}">
       ${l.added ? `<button class="rm" data-rm="${l.id}" aria-label="Zeile entfernen">×</button>` : ''}
@@ -299,6 +306,18 @@ $('btnDone').onclick = async () => {
   } catch (e) { toast(e.message); }
 };
 
+$('btnRelease').onclick = async () => {
+  if (!confirm('Aufgabe wirklich verlassen? Alle bisher für diese Aufgabe erfassten Mengen und Änderungen gehen dabei verloren.')) return;
+  clearTimeout(S.timer); clearTimeout(S.retry); S.retry = null; S.queue.clear();
+  try {
+    await api(`/tasks/${S.task}/release`, { body: {} });
+    localStorage.removeItem(bufKey(S.task));
+    localStorage.removeItem('inv.task');
+    toast('Aufgabe freigegeben');
+    openTasks();
+  } catch (e) { toast(e.message); }
+};
+
 $('btnBack').onclick = async () => {
   if (S.role === 'admin') return openAdmin();
   await flush();
@@ -309,17 +328,25 @@ $('btnBack').onclick = async () => {
 window.addEventListener('online', () => { if (S.queue.size) flush(); });
 
 // ── Verwaltung ────────────────────────────────────────────────────────────
+async function refreshAdmin() {
+  try {
+    const d = await api('/admin/status');
+    $('kTasks').textContent = d.tasks.length;
+    $('kLines').textContent = d.lines;
+    $('kDone').textContent = d.done;
+    $('kEmpty').textContent = d.empty;
+    $('openState').textContent = d.open ? 'für Mitarbeiter freigegeben' : 'gesperrt';
+    $('btnOpen').textContent = d.open ? 'Sperren' : 'Freigeben';
+    $('btnOpen').onclick = async () => { await api('/admin/open', { body: { open: !d.open } }); refreshAdmin(); };
+  } catch { /* Netzfehler/Token abgelaufen — nächster Versuch folgt, api() regelt den Logout */ }
+}
+
 async function openAdmin() {
   S.task = null;
-  const d = await api('/admin/status');
-  $('kTasks').textContent = d.tasks.length;
-  $('kLines').textContent = d.lines;
-  $('kDone').textContent = d.done;
-  $('kEmpty').textContent = d.empty;
-  $('openState').textContent = d.open ? 'für Mitarbeiter freigegeben' : 'gesperrt';
-  $('btnOpen').textContent = d.open ? 'Sperren' : 'Freigeben';
-  $('btnOpen').onclick = async () => { await api('/admin/open', { body: { open: !d.open } }); openAdmin(); };
   show('vAdmin', 'Verwaltung', S.worker);
+  await refreshAdmin();
+  clearInterval(S.adminTimer);
+  S.adminTimer = setInterval(refreshAdmin, 8000);
 }
 
 $('fCsvFile').onchange = async () => {
@@ -339,12 +366,17 @@ $('fWorkersFile').onchange = async () => {
 $('btnImport').onclick = async () => {
   const csv = $('fCsv').value;
   if (!csv.trim()) return toast('Bitte CSV einfügen');
+  $('importProblems').classList.add('hide');
   try {
     const d = await api('/admin/import', {
       body: { csv, workers: $('fWorkers').value.split('\n').map((s) => s.trim()).filter(Boolean) },
     });
     toast(`Geladen: ${d.tasks} Aufgaben, ${d.lines} Zeilen`);
-    if (d.problems?.length) alert('Bitte prüfen:\n\n' + d.problems.join('\n'));
+    if (d.problems?.length) {
+      $('importProblems').innerHTML = `<b>${d.problems.length} Problem(e) beim Import — bitte prüfen:</b>
+        <ul style="margin:6px 0 0;padding-left:18px">${d.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
+      $('importProblems').classList.remove('hide');
+    }
     openAdmin();
   } catch (e) { toast(e.message); }
 };
@@ -366,7 +398,7 @@ $('btnExport').onclick = async () => {
 };
 
 $('btnReset').onclick = async () => {
-  if (!confirm('Alle Aufgaben und erfassten Mengen löschen?')) return;
+  if (!confirm('Alle Aufgaben, erfassten Mengen und Mitarbeiternamen löschen?')) return;
   await api('/admin/reset', { body: {} });
   toast('Durchgang geleert'); openAdmin();
 };

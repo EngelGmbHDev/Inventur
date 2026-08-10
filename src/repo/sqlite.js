@@ -40,16 +40,32 @@ export function createRepo(path, schemaPath) {
       all('SELECT n, von, bis, cnt, status, worker FROM tasks WHERE run_id=? ORDER BY n', runId),
     getTask: (runId, n) =>
       get('SELECT n, status, worker FROM tasks WHERE run_id=? AND n=?', runId, n) ?? null,
+    activeTaskFor: (runId, worker) =>
+      get("SELECT n FROM tasks WHERE run_id=? AND worker=? AND status='taken'", runId, worker)?.n ?? null,
 
     claimTask(runId, n, worker) {
       const r = run(
-        "UPDATE tasks SET status='taken', worker=?, taken_at=datetime('now') WHERE run_id=? AND n=? AND status='open'",
-        worker, runId, n);
+        `UPDATE tasks SET status='taken', worker=?, taken_at=datetime('now')
+         WHERE run_id=? AND n=? AND status='open'
+           AND NOT EXISTS (SELECT 1 FROM tasks t2 WHERE t2.run_id=? AND t2.worker=? AND t2.status='taken')`,
+        worker, runId, n, runId, worker);
       return r.changes === 1;
     },
-    releaseTask: (runId, n, worker) =>
-      run("UPDATE tasks SET status='open', worker=NULL, taken_at=NULL WHERE run_id=? AND n=? AND worker=? AND status='taken'",
-        runId, n, worker),
+    releaseTask(runId, n, worker) {
+      let ok = false;
+      tx(() => {
+        const r = run(
+          "UPDATE tasks SET status='open', worker=NULL, taken_at=NULL WHERE run_id=? AND n=? AND worker=? AND status='taken'",
+          runId, n, worker);
+        ok = r.changes === 1;
+        if (!ok) return;
+        run('DELETE FROM lines WHERE run_id=? AND n=? AND added=1', runId, n);
+        run(`UPDATE lines SET itemcode=COALESCE(itemcode_soll, itemcode), itemcode_soll=NULL, menge=NULL, counted_at=NULL
+             WHERE run_id=? AND n=?`, runId, n);
+        run('UPDATE tasks SET cnt=(SELECT COUNT(*) FROM lines WHERE run_id=? AND n=?) WHERE run_id=? AND n=?', runId, n, runId, n);
+      });
+      return ok;
+    },
     completeTask: (runId, n, worker, ts) =>
       run("UPDATE tasks SET status='done', done_at=? WHERE run_id=? AND n=? AND worker=?", ts, runId, n, worker),
 

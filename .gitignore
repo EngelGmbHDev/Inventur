@@ -21,6 +21,7 @@ desktop.ini
 .idea/
 *.swp
 *~
+_heap/
 
 # Logs
 *.log

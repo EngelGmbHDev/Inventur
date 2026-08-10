@@ -67,6 +67,15 @@ async function tasks(seg, req, repo, who) {
   const action = seg[1];
 
   if (action === 'claim') {
+    const t = await repo.getTask(RUN, n);
+    if (!t) return json(404, { error: 'Aufgabe nicht gefunden' });
+    if (t.status === 'taken' && t.worker === who.worker)
+      return json(200, { lines: await repo.getLines(RUN, n) });
+
+    const active = await repo.activeTaskFor(RUN, who.worker);
+    if (active !== null)
+      return json(409, { error: `Sie bearbeiten bereits Aufgabe ${active}. Bitte zuerst abschließen oder verlassen.` });
+
     const ok = await repo.claimTask(RUN, n, who.worker);
     if (!ok) return json(409, { error: 'Aufgabe ist bereits vergeben' });
     return json(200, { lines: await repo.getLines(RUN, n) });
@@ -116,7 +125,7 @@ async function tasks(seg, req, repo, who) {
     return ok ? json(200, { ok: true }) : json(400, { error: 'Nur selbst erfasste Zeilen lassen sich entfernen' });
   }
 
-  if (action === 'release') {
+  if (action === 'release' && req.method === 'POST') {
     await repo.releaseTask(RUN, n, who.worker);
     return json(200, { ok: true });
   }
@@ -208,9 +217,10 @@ export function parseCsv(text) {
 
   raw.forEach((line, i) => {
     const c = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
-    const [lagerplatz, itemcode, aufgabe] = c;
+    const [lagerplatz, itemcodeRaw, aufgabe] = c;
+    const itemcode = itemcodeRaw ?? '';
     const n = Number(aufgabe);
-    if (!lagerplatz || !itemcode || !Number.isInteger(n)) {
+    if (!lagerplatz || !Number.isInteger(n)) {
       problems.push(`Zeile ${i + 1}: ${line.slice(0, 60)}`);
       return;
     }
