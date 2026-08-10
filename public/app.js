@@ -65,6 +65,7 @@ $('btnLogin').onclick = async () => {
   const pin = $('fPin').value.trim();
   if (!pin) return toast('Bitte Code eingeben');
   const worker = $('fWorker').classList.contains('hide') ? '' : $('fWorker').value;
+  if (worker && !confirm(`Anmelden als „${worker}“?`)) return;
   try {
     const d = await api('/login', { body: { pin, worker } });
     if (d.needWorker) {
