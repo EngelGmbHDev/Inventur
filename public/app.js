@@ -35,7 +35,7 @@ function toast(msg) {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 function show(view, title, sub, opts = {}) {
-  for (const v of ['vLogin', 'vTasks', 'vCount', 'vAdmin', 'vHelp']) $(v).classList.toggle('hide', v !== view);
+  for (const v of ['vLogin', 'vTasks', 'vCount', 'vAdmin', 'vHelp', 'vAdminTasks']) $(v).classList.toggle('hide', v !== view);
   $('hTitle').textContent = title;
   $('hSub').textContent = sub;
   $('tape').classList.toggle('hide', view !== 'vCount');
@@ -377,6 +377,8 @@ async function openAdmin() {
   clearInterval(S.adminTimer);
   S.adminTimer = setInterval(refreshAdmin, 8000);
 }
+
+$('btnShowTasks').onclick = () => show('vAdminTasks', 'Aufgabenliste', S.worker, { back: true });
 
 $('fCsvFile').onchange = async () => {
   const file = $('fCsvFile').files[0];

@@ -211,8 +211,7 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <button class="btn" id="btnOpen">Freigeben</button>
     </div>
 
-    <h2>Aufgaben <span class="note" style="display:inline;margin:0">(wer arbeitet woran)</span></h2>
-    <div id="adminTasks"></div>
+    <button class="btn wide" id="btnShowTasks" style="margin-bottom:22px">Aufgabenliste anzeigen (wer arbeitet woran)</button>
 
     <h2>Aufgaben laden</h2>
     <div class="pane">
@@ -240,6 +239,11 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <p class="note" style="margin:14px 0 0">Das Leeren löscht alle Aufgaben, alle erfassten Mengen und die Liste der Mitarbeiternamen.</p>
       <button class="btn wide" id="btnReset" style="background:var(--warn);margin-top:10px">Durchgang leeren</button>
     </div>
+  </section>
+
+  <!-- Aufgabenliste (Verwaltung) -->
+  <section id="vAdminTasks" class="hide">
+    <div id="adminTasks"></div>
   </section>
 </main>
 
