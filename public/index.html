@@ -9,14 +9,14 @@
 /* Systemschriften: die Seite muss auch bei einem Balken LTE laden. */
 :root{
   --bg:#E8EAED; --card:#fff; --ink:#12161C; --muted:#626A76; --line:#CDD2D8;
-  --signal:#FFC400; --ok:#0F7B4F; --warn:#B4341C; --navy:#1D3557;
+  --signal:#FFC400; --ok:#0F7B4F; --warn:#B4341C; --orange:#E78000;
   --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font:16px/1.4 var(--sans);
-  -webkit-text-size-adjust:100%;overscroll-behavior-y:contain}
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;overscroll-behavior-y:contain}
 :focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 button{font:inherit;color:inherit;cursor:pointer}
 .hide{display:none !important}
@@ -60,12 +60,12 @@ main{padding:14px 14px calc(env(safe-area-inset-bottom) + 100px)}
   border-radius:8px;padding:10px 12px;margin-bottom:8px}
 .row[data-s="dirty"]{border-left-color:var(--signal)}
 .row[data-s="saved"]{border-left-color:var(--ok)}
-.row .lp{font:600 19px/1.2 var(--mono);letter-spacing:.02em;flex:1;word-break:break-all}
+.row .lp{font:600 19px/1.2 var(--mono);letter-spacing:.02em;flex:1;word-break:break-all;color:var(--orange)}
 .row .ic{display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:3px 0 0;
-  font:600 18px/1.4 var(--mono);color:var(--navy);text-decoration:underline dotted;text-underline-offset:3px}
+  font:600 18px/1.4 var(--mono);color:var(--ink);text-decoration:underline dotted;text-underline-offset:3px}
 .row .ic .pen{font-size:13px;opacity:.6}
 .row .icedit{width:100%;margin-top:4px;padding:8px;font:600 18px/1 var(--mono);
-  border:2px solid var(--navy);border-radius:6px;text-align:left;color:var(--navy)}
+  border:2px solid var(--ink);border-radius:6px;text-align:left;color:var(--ink)}
 .tag{display:inline-block;margin-top:4px;padding:2px 7px;border-radius:4px;font:600 11px/1.6 var(--sans);
   font-style:normal;letter-spacing:.03em;background:#F3E3A6;color:#5C4A00}
 .tag.neu{background:var(--ink);color:#fff}
