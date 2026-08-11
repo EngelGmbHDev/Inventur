@@ -137,19 +137,20 @@ export function createRepo(path, schemaPath) {
     },
     importRun(runId, rows, workers) {
       const insL = db.prepare('INSERT INTO lines(run_id,n,lagerplatz,itemcode) VALUES(?,?,?,?)');
-      const insW = db.prepare('INSERT OR IGNORE INTO workers(run_id,name) VALUES(?,?)');
+      const insW = db.prepare('INSERT OR IGNORE INTO workers(run_id,name,pin) VALUES(?,?,?)');
       tx(() => {
         run('DELETE FROM lines WHERE run_id=?', runId);
         run('DELETE FROM tasks WHERE run_id=?', runId);
         run('DELETE FROM workers WHERE run_id=?', runId);
         for (const r of rows) insL.run(runId, r.n, r.lagerplatz, r.itemcode);
-        for (const w of workers) if (String(w).trim()) insW.run(runId, String(w).trim());
+        for (const w of workers) insW.run(runId, w.name, w.pin);
         run(`INSERT INTO tasks(run_id,n,von,bis,cnt)
              SELECT ?, n, MIN(lagerplatz), MAX(lagerplatz), COUNT(*)
              FROM lines WHERE run_id=? GROUP BY n`, runId, runId);
       });
     },
     listWorkers: (runId) => all('SELECT name FROM workers WHERE run_id=? ORDER BY name', runId).map((r) => r.name),
+    getWorkerPin: (runId, name) => get('SELECT pin FROM workers WHERE run_id=? AND name=?', runId, name)?.pin ?? null,
     summary: (runId) => ({
       lines: get('SELECT COUNT(*) c FROM lines WHERE run_id=?', runId).c,
       tasks: get('SELECT COUNT(*) c FROM tasks WHERE run_id=?', runId).c,

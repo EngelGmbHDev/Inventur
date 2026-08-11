@@ -22,7 +22,6 @@ Adaptern und in `repo/`.
 ```bash
 openssl rand -hex 32                      # → TOKEN_SECRET
 node server/setpin.js admin ACHTSTELLIG   # Code für die Verwaltung
-node server/setpin.js worker 4711         # Startcode für die Mitarbeiter
 TOKEN_SECRET=... node server/index.js     # http://localhost:8080
 ```
 
@@ -43,7 +42,6 @@ wrangler deploy
 wrangler secret put TOKEN_SECRET     # openssl rand -hex 32
 
 wrangler d1 execute inventur --remote --command="$(node server/pinsql.js admin Sommer2026)"
-wrangler d1 execute inventur --remote --command="$(node server/pinsql.js worker 4711)"
 ```
 
 Über die Dashboard-Oberfläche (Workers Builds, Git-Anbindung): Build command
@@ -53,12 +51,13 @@ kommen aus `wrangler.toml` bzw. den Worker-Settings — nicht in das Repository 
 ## Ablauf
 
 1. Als Verwaltung anmelden → „Durchgang leeren", falls noch Daten vom letzten Mal vorliegen.
-2. CSV `lagerplatz;itemcode;aufgabe_num` und die Mitarbeiternamen einfügen → „Laden und prüfen".
-   Geprüft werden doppelte Paare und Lagerplätze, die in zwei Aufgaben geraten sind.
+2. CSV `lagerplatz;itemcode;aufgabe_num` und die Mitarbeiterliste `name;pincode` einfügen
+   → „Laden und prüfen". Jeder Mitarbeiter bekommt hier seinen eigenen Code (mind. 4 Zeichen,
+   im Klartext in der Datenbank — kein sensibler Login). Geprüft werden doppelte Paare und
+   Lagerplätze, die in zwei Aufgaben geraten sind.
 3. Anzahl Aufgaben und Zeilen gegen die Quelle abgleichen.
-4. Code für die Mitarbeiter ändern.
-5. „Freigeben" — erst jetzt sind die Aufgaben auf den Telefonen sichtbar.
-6. Zum Schluss „Sperren", danach „CSV herunterladen".
+4. „Freigeben" — erst jetzt sind die Aufgaben auf den Telefonen sichtbar.
+5. Zum Schluss „Sperren", danach „CSV herunterladen".
 
 ## Abweichender Artikel am Lagerplatz
 

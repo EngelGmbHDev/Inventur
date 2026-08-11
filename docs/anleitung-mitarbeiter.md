@@ -10,8 +10,8 @@
 ## So geht's
 
 1. **QR-Code scannen** — öffnet die Inventur-Seite im Browser des Handys.
-2. **Zugangscode eingeben.** Den Code bekommen Sie von der Leitung.
-3. **Ihren Namen aus der Liste wählen** und die Auswahl bestätigen.
+2. **Ihren Namen aus der Liste wählen.**
+3. **Ihren persönlichen Zugangscode eingeben.** Den Code bekommen Sie von der Leitung.
 4. **Eine freie Aufgabe antippen.** Eine Aufgabe ist ein Bereich von Lagerplätzen — sie gehört danach nur Ihnen, niemand anderes kann sie gleichzeitig bearbeiten.
 5. **Pro Lagerplatz die gezählte Menge eintragen.**
 6. **Liegt ein anderer Artikel dort als erwartet?** Auf die Artikelnummer tippen (Stift-Symbol ✎) und die richtige Nummer eintragen.

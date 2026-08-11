@@ -126,14 +126,16 @@ export function createRepo(DB) {
       for (const part of chunk(rows, 400))
         await DB.batch(part.map((r) =>
           P('INSERT INTO lines(run_id,n,lagerplatz,itemcode) VALUES(?,?,?,?)', runId, r.n, r.lagerplatz, r.itemcode)));
-      const w = workers.map((x) => String(x).trim()).filter(Boolean);
-      if (w.length)
-        await DB.batch(w.map((name) => P('INSERT OR IGNORE INTO workers(run_id,name) VALUES(?,?)', runId, name)));
+      if (workers.length)
+        await DB.batch(workers.map((w) =>
+          P('INSERT OR IGNORE INTO workers(run_id,name,pin) VALUES(?,?,?)', runId, w.name, w.pin)));
       await run(`INSERT INTO tasks(run_id,n,von,bis,cnt)
                  SELECT ?, n, MIN(lagerplatz), MAX(lagerplatz), COUNT(*)
                  FROM lines WHERE run_id=? GROUP BY n`, runId, runId);
     },
     listWorkers: async (runId) => (await all('SELECT name FROM workers WHERE run_id=? ORDER BY name', runId)).map((r) => r.name),
+    getWorkerPin: async (runId, name) =>
+      (await first('SELECT pin FROM workers WHERE run_id=? AND name=?', runId, name))?.pin ?? null,
     async summary(runId) {
       const q = async (sql) => (await first(sql, runId)).c;
       return {

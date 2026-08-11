@@ -28,8 +28,9 @@ src/           Platform-agnostic business logic
 worker/index.js   Cloudflare Workers adapter (~35 lines): routes /api/* to handle(), everything
                   else to the ASSETS binding
 server/index.js   Node adapter: node:http + node:sqlite, zero npm dependencies
-server/setpin.js   Sets an admin/worker PIN directly against the local sqlite DB
-server/pinsql.js   Prints the equivalent SQL for setting a PIN remotely against D1
+server/setpin.js   Sets the admin PIN directly against the local sqlite DB (admin only — worker
+                   PINs are per-person now, set via CSV import, see below)
+server/pinsql.js   Prints the equivalent SQL for setting the admin PIN remotely against D1
 schema.sql        Single source of truth for the schema (SQLite dialect, used by both adapters)
 ```
 
@@ -52,7 +53,6 @@ the schema and repo layer for a future multi-run feature but is not currently us
 # Self-hosted (Node ≥24, or Node 22 with --experimental-sqlite)
 openssl rand -hex 32                      # → TOKEN_SECRET
 node server/setpin.js admin ACHTSTELLIG   # set the admin PIN (min. 8 chars)
-node server/setpin.js worker 4711         # set the starting worker PIN
 TOKEN_SECRET=... node server/index.js     # → http://localhost:8080
 
 docker compose up -d                      # adjust the Traefik host in compose.yaml first
@@ -67,9 +67,8 @@ wrangler d1 execute inventur --remote --file=schema.sql   # apply/update schema 
                                                             # on deploy, must be run manually
 wrangler secret put TOKEN_SECRET
 
-# Set PINs against the remote D1 database (no local DB needed)
+# Set the admin PIN against the remote D1 database (no local DB needed)
 wrangler d1 execute inventur --remote --command="$(node server/pinsql.js admin Sommer2026)"
-wrangler d1 execute inventur --remote --command="$(node server/pinsql.js worker 4711)"
 ```
 
 There is no test suite, no linter, and no CI workflow configured in this repo.
@@ -90,6 +89,13 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
 
 ## Business rules worth knowing before changing handlers.js
 
+- Two separate auth models, both in `login()`: **admin** is a single shared code, hashed
+  (PBKDF2) in the `auth` table, entered with no worker name. **Workers** are individual — each
+  gets their own PIN, stored as **plain text** in `workers.pin` (deliberate: low-stakes internal
+  tool, and it lets the admin actually see/debug a worker's code, which a hash wouldn't allow).
+  Worker PINs are set only via CSV import (`parseWorkers`, format `name;pincode`, min. 4 chars) —
+  there's no runtime "change worker PIN" endpoint. Login requires name selected first, then that
+  worker's exact PIN checked directly against `workers.pin` — no lookup by PIN alone.
 - CSV import (`lagerplatz;itemcode;aufgabe_num`) rejects duplicate lagerplatz/itemcode pairs and
   flags any lagerplatz that spans two tasks (`parseCsv` in handlers.js). `itemcode` may be empty —
   that represents a lagerplatz that's expected to be empty (worker just confirms `menge=0`, or

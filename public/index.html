@@ -152,10 +152,10 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
   <!-- Anmeldung -->
   <section id="vLogin">
     <div class="pane">
+      <label for="fWorker">Wer zählt</label>
+      <select class="field" id="fWorker"><option value="">Verwaltung</option></select>
       <label for="fPin">Zugangscode</label>
       <input class="field" id="fPin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
-      <label for="fWorker">Wer zählt</label>
-      <select class="field" id="fWorker"></select>
       <button class="btn wide" id="btnLogin">Anmelden</button>
     </div>
     <p class="note" style="margin-top:14px">Den Zugangscode erhalten Sie vor Beginn der Inventur von der Leitung.</p>
@@ -167,8 +167,8 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
     <div class="pane">
       <h2 style="margin-top:0">So funktioniert's</h2>
       <ol style="margin:0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.7">
-        <li>Zugangscode eingeben — den erhalten Sie von der Leitung.</li>
-        <li>Ihren Namen aus der Liste wählen und bestätigen.</li>
+        <li>Ihren Namen aus der Liste wählen.</li>
+        <li>Ihren persönlichen Zugangscode eingeben — den erhalten Sie von der Leitung.</li>
         <li>Eine freie Aufgabe antippen — sie gehört danach nur Ihnen.</li>
         <li>Pro Lagerplatz die gezählte Menge eintragen.</li>
         <li>Liegt ein anderer Artikel dort als erwartet? Auf die Artikelnummer tippen (✎) und korrigieren.</li>
@@ -222,15 +222,15 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <textarea class="field" id="fCsv" placeholder="01-A-01;12345;1&#10;01-A-02;12346;1&#10;01-A-03;;1"></textarea>
       <label for="fWorkersFile">Mitarbeiter-CSV-Datei wählen</label>
       <input class="field" id="fWorkersFile" type="file" accept=".csv,text/csv">
-      <label for="fWorkers">Namen der Mitarbeiter, einer pro Zeile</label>
-      <textarea class="field" id="fWorkers" style="min-height:80px"></textarea>
+      <label for="fWorkers">CSV: name ; pincode (mind. 4 Zeichen, je Mitarbeiter eigener Code)</label>
+      <textarea class="field" id="fWorkers" style="min-height:80px" placeholder="Mike Kotz;8945&#10;Anna Beispiel;1234"></textarea>
       <button class="btn wide" id="btnImport">Laden und prüfen</button>
       <div class="err hide" id="importProblems" style="margin:12px 0 0;max-height:240px;overflow:auto"></div>
     </div>
 
-    <h2>Code für Mitarbeiter</h2>
+    <h2>Eigenen Code ändern</h2>
     <div class="pane">
-      <input class="field" id="fNewPin" inputmode="numeric" placeholder="neuer Code" autocomplete="off">
+      <input class="field" id="fNewPin" inputmode="numeric" placeholder="neuer Code (mind. 8 Zeichen)" autocomplete="off">
       <button class="btn wide" id="btnPin">Code ändern</button>
     </div>
 

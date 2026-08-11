@@ -63,21 +63,24 @@ $('btnLogout').onclick = async () => {
 // ── Anmeldung ─────────────────────────────────────────────────────────────
 $('btnHelp').onclick = () => show('vHelp', 'Anleitung', '', { back: true });
 
+async function loadWorkerList() {
+  try {
+    const d = await api('/state');
+    const sel = $('fWorker');
+    const prev = S.worker;
+    sel.innerHTML = '<option value="">Verwaltung</option>'
+      + d.workers.map((w) => `<option>${esc(w)}</option>`).join('');
+    if (prev && d.workers.includes(prev)) sel.value = prev;
+  } catch { /* egal, Verwaltung bleibt als Option nutzbar */ }
+}
+
 $('btnLogin').onclick = async () => {
   const pin = $('fPin').value.trim();
   if (!pin) return toast('Bitte Code eingeben');
-  const worker = $('fWorker').classList.contains('hide') ? '' : $('fWorker').value;
+  const worker = $('fWorker').value;
   if (worker && !confirm(`Anmelden als „${worker}“?`)) return;
   try {
     const d = await api('/login', { body: { pin, worker } });
-    if (d.needWorker) {
-      const sel = $('fWorker');
-      sel.innerHTML = d.workers.map((w) => `<option>${esc(w)}</option>`).join('');
-      if (!d.workers.length) return toast('Keine Mitarbeiter hinterlegt – bitte an die Leitung wenden');
-      if (S.worker && d.workers.includes(S.worker)) sel.value = S.worker;
-      sel.classList.remove('hide'); sel.previousElementSibling.classList.remove('hide');
-      return toast('Bitte Ihren Namen wählen');
-    }
     S.token = d.token; S.role = d.role; S.worker = d.worker;
     localStorage.setItem('inv.token', d.token);
     localStorage.setItem('inv.role', d.role);
@@ -86,10 +89,6 @@ $('btnLogin').onclick = async () => {
     d.role === 'admin' ? openAdmin() : openTasks();
   } catch (e) { toast(e.message); }
 };
-
-// Name bleibt verborgen, bis der Code stimmt
-$('fWorker').classList.add('hide');
-$('fWorker').previousElementSibling.classList.add('hide');
 
 // ── Aufgabenliste ─────────────────────────────────────────────────────────
 async function openTasks() {
@@ -400,7 +399,7 @@ $('btnImport').onclick = async () => {
   $('importProblems').classList.add('hide');
   try {
     const d = await api('/admin/import', {
-      body: { csv, workers: $('fWorkers').value.split('\n').map((s) => s.trim()).filter(Boolean) },
+      body: { csv, workersCsv: $('fWorkers').value },
     });
     toast(`Geladen: ${d.tasks} Aufgaben, ${d.lines} Zeilen`);
     if (d.problems?.length) {
@@ -409,12 +408,13 @@ $('btnImport').onclick = async () => {
       $('importProblems').classList.remove('hide');
     }
     openAdmin();
+    loadWorkerList();
   } catch (e) { toast(e.message); }
 };
 
 $('btnPin').onclick = async () => {
   const pin = $('fNewPin').value.trim();
-  try { await api('/admin/pin', { body: { role: 'worker', pin } }); $('fNewPin').value = ''; toast('Code geändert'); }
+  try { await api('/admin/pin', { body: { role: 'admin', pin } }); $('fNewPin').value = ''; toast('Code geändert'); }
   catch (e) { toast(e.message); }
 };
 
@@ -432,10 +432,13 @@ $('btnReset').onclick = async () => {
   if (!confirm('Alle Aufgaben, erfassten Mengen und Mitarbeiternamen löschen?')) return;
   await api('/admin/reset', { body: {} });
   toast('Durchgang geleert'); openAdmin();
+  loadWorkerList();
 };
 
 // ── Start ─────────────────────────────────────────────────────────────────
 function esc(s) { return String(s ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+
+loadWorkerList();
 
 (async function boot() {
   if (!S.token) return;

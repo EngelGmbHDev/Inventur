@@ -15,7 +15,8 @@ export async function handle(req, repo, env) {
   const secret = env.TOKEN_SECRET;
 
   if (seg[0] === 'login')  return login(req, repo, env);
-  if (seg[0] === 'state')  return json(200, { open: (await repo.getSetting('open')) === '1' });
+  if (seg[0] === 'state')
+    return json(200, { open: (await repo.getSetting('open')) === '1', workers: await repo.listWorkers(RUN) });
 
   const who = await readToken(req.token, secret);
   if (!who) return json(401, { error: 'Anmeldung erforderlich' });
@@ -33,6 +34,9 @@ export async function handle(req, repo, env) {
 }
 
 // ── Anmeldung ─────────────────────────────────────────────────────────────
+// Verwaltung: ein gemeinsamer, gehashter Code (kein Name).
+// Mitarbeiter: individueller Klartext-Code je Person, kommt aus dem CSV-Import
+// (workers.pin) — Name und Code werden gemeinsam geprüft.
 async function login(req, repo, env) {
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
 
@@ -40,20 +44,28 @@ async function login(req, repo, env) {
   if (blocked) return json(429, { error: `Zu viele Versuche. Bitte ${blocked} Min. warten.` });
 
   const pin = String(req.body?.pin ?? '');
-  for (const role of ['admin', 'worker']) {
-    const rec = await repo.getAuth(role);
+  const worker = String(req.body?.worker ?? '').trim();
+
+  if (!worker) {
+    const rec = await repo.getAuth('admin');
     if (rec && await checkPin(pin, rec.hash, rec.salt)) {
       await repo.clearAttempts(req.ip);
-      const worker = String(req.body?.worker ?? '').trim();
-
-      // Schritt 1: Code stimmt, Name fehlt noch — Liste ausgeben, noch kein Token
-      if (role === 'worker' && !worker)
-        return json(200, { needWorker: true, workers: await repo.listWorkers(RUN) });
-
-      const who = role === 'admin' ? 'admin' : worker;
-      return json(200, { token: await makeToken({ role, worker: who }, env.TOKEN_SECRET), role, worker: who });
+      return json(200, {
+        token: await makeToken({ role: 'admin', worker: 'admin' }, env.TOKEN_SECRET),
+        role: 'admin', worker: 'admin',
+      });
+    }
+  } else {
+    const stored = await repo.getWorkerPin(RUN, worker);
+    if (stored !== null && stored === pin) {
+      await repo.clearAttempts(req.ip);
+      return json(200, {
+        token: await makeToken({ role: 'worker', worker }, env.TOKEN_SECRET),
+        role: 'worker', worker,
+      });
     }
   }
+
   await repo.bumpAttempt(req.ip, MAX_TRIES, BLOCK_MIN);
   return json(401, { error: 'Code ungültig' });
 }
@@ -178,8 +190,9 @@ async function admin(seg, req, repo) {
       return json(409, { error: 'Im Durchgang gibt es bereits vergebene oder abgegebene Aufgaben. Bitte zuerst leeren.' });
     const parsed = parseCsv(String(req.body?.csv ?? ''));
     if (parsed.error) return json(400, { error: parsed.error });
-    await repo.importRun(RUN, parsed.rows, req.body?.workers ?? []);
-    return json(200, { ...(await repo.summary(RUN)), problems: parsed.problems });
+    const wParsed = parseWorkers(String(req.body?.workersCsv ?? ''));
+    await repo.importRun(RUN, parsed.rows, wParsed.workers);
+    return json(200, { ...(await repo.summary(RUN)), problems: [...parsed.problems, ...wParsed.problems] });
   }
 
   if (cmd === 'reset' && req.method === 'POST') {
@@ -248,4 +261,29 @@ export function parseCsv(text) {
   }
 
   return { rows, problems: problems.slice(0, 50) };
+}
+
+// ── CSV: name ; pincode ─────────────────────────────────────────────────────
+export function parseWorkers(text) {
+  const raw = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter((l) => l.trim());
+  if (!raw.length) return { workers: [], problems: [] };
+
+  const delim = (raw[0].match(/;/g) || []).length >= (raw[0].match(/,/g) || []).length ? ';' : ',';
+  if (/^name/i.test(raw[0])) raw.shift();
+
+  const workers = [], problems = [];
+  const seen = new Set();
+
+  raw.forEach((line, i) => {
+    const [name, pin] = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
+    if (!name || !pin || pin.length < 4) {
+      problems.push(`Mitarbeiter Zeile ${i + 1}: ${line.slice(0, 60)}`);
+      return;
+    }
+    if (seen.has(name)) { problems.push(`Mitarbeiter doppelt: ${name}`); return; }
+    seen.add(name);
+    workers.push({ name, pin });
+  });
+
+  return { workers, problems: problems.slice(0, 50) };
 }

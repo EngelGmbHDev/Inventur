@@ -47,5 +47,6 @@ CREATE INDEX IF NOT EXISTS ix_lines_task ON lines (run_id, n, id);
 CREATE TABLE IF NOT EXISTS workers (
   run_id INTEGER NOT NULL,
   name   TEXT NOT NULL,
+  pin    TEXT,                     -- Klartext, individuell je Mitarbeiter, aus dem CSV-Import
   PRIMARY KEY (run_id, name)
 );
