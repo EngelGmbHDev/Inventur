@@ -102,6 +102,8 @@ label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
   border:2px solid var(--line);border-radius:8px;margin-bottom:16px;background:#fff}
 select.field{letter-spacing:normal;font-family:var(--sans)}
 textarea.field{letter-spacing:normal;font-size:13px;min-height:150px;line-height:1.5}
+.link{display:block;margin:14px auto 0;background:none;border:none;padding:0;
+  color:var(--muted);text-decoration:underline;font-size:14px}
 
 /* ── Verwaltung ────────────────────────────────────── */
 .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
@@ -157,6 +159,26 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <button class="btn wide" id="btnLogin">Anmelden</button>
     </div>
     <p class="note" style="margin-top:14px">Den Zugangscode erhalten Sie vor Beginn der Inventur von der Leitung.</p>
+    <button class="link" id="btnHelp">Anleitung anzeigen</button>
+  </section>
+
+  <!-- Hilfe -->
+  <section id="vHelp" class="hide">
+    <div class="pane">
+      <h2 style="margin-top:0">So funktioniert's</h2>
+      <ol style="margin:0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.7">
+        <li>Zugangscode eingeben — den erhalten Sie von der Leitung.</li>
+        <li>Ihren Namen aus der Liste wählen und bestätigen.</li>
+        <li>Eine freie Aufgabe antippen — sie gehört danach nur Ihnen.</li>
+        <li>Pro Lagerplatz die gezählte Menge eintragen.</li>
+        <li>Liegt ein anderer Artikel dort als erwartet? Auf die Artikelnummer tippen (✎) und korrigieren.</li>
+        <li>Liegt zusätzlich noch etwas dort? Ganz unten „Zusätzlicher Artikel am Platz" nutzen.</li>
+        <li>Farbe am linken Rand: grau = noch nicht gezählt, gelb = erfasst aber noch nicht übertragen, grün = gespeichert.</li>
+        <li>Alles erfasst? Unten auf „Abgeben" tippen.</li>
+        <li>Aus Versehen die falsche Aufgabe geöffnet? „Aufgabe verlassen" gibt sie wieder frei.</li>
+        <li>Teilen Sie sich ein Gerät mit Kolleginnen/Kollegen? Bitte am Ende „Ausloggen" nicht vergessen.</li>
+      </ol>
+    </div>
   </section>
 
   <!-- Aufgabenliste -->

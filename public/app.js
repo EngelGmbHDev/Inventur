@@ -35,13 +35,13 @@ function toast(msg) {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 function show(view, title, sub, opts = {}) {
-  for (const v of ['vLogin', 'vTasks', 'vCount', 'vAdmin']) $(v).classList.toggle('hide', v !== view);
+  for (const v of ['vLogin', 'vTasks', 'vCount', 'vAdmin', 'vHelp']) $(v).classList.toggle('hide', v !== view);
   $('hTitle').textContent = title;
   $('hSub').textContent = sub;
   $('tape').classList.toggle('hide', view !== 'vCount');
   $('dock').classList.toggle('hide', view !== 'vCount');
   $('btnBack').classList.toggle('hide', !opts.back);
-  $('btnLogout').classList.toggle('hide', view === 'vLogin');
+  $('btnLogout').classList.toggle('hide', view === 'vLogin' || view === 'vHelp');
   window.scrollTo(0, 0);
 }
 
@@ -61,6 +61,8 @@ $('btnLogout').onclick = async () => {
 };
 
 // ── Anmeldung ─────────────────────────────────────────────────────────────
+$('btnHelp').onclick = () => show('vHelp', 'Anleitung', '', { back: true });
+
 $('btnLogin').onclick = async () => {
   const pin = $('fPin').value.trim();
   if (!pin) return toast('Bitte Code eingeben');
@@ -156,7 +158,7 @@ function renderLines() {
 
   const plaetze = [...new Set(S.lines.map((l) => l.lagerplatz))].sort();
   const pane = `<div class="addpane">
-    <h3>Anderer Artikel am Platz</h3>
+    <h3>Zusätzlicher Artikel am Platz</h3>
     <select id="aLp">${plaetze.map((x) => `<option>${esc(x)}</option>`).join('')}</select>
     <input id="aCode" placeholder="Artikelnummer" autocapitalize="characters" autocomplete="off">
     <input id="aMenge" inputmode="decimal" placeholder="Menge">
@@ -320,6 +322,7 @@ $('btnRelease').onclick = async () => {
 };
 
 $('btnBack').onclick = async () => {
+  if (!S.token) return show('vLogin', 'Inventur', 'Anmeldung');
   if (S.role === 'admin') return openAdmin();
   await flush();
   if (S.queue.size && !confirm('Es gibt noch nicht übertragene Zeilen. Trotzdem zurück zur Liste?')) return;
