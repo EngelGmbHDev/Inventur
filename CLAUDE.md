@@ -113,3 +113,7 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   besides reopening the task, it deletes any `added=1` lines, restores `itemcode` from
   `itemcode_soll` where set, and clears all `menge`/`counted_at` — the task goes back to exactly
   its post-import state. This is different from `completeTask`, which keeps everything entered.
+- `adminResetTask` is the admin-triggered equivalent of `releaseTask` (same line-cleanup logic,
+  factored into a shared `resetLines` helper in each repo adapter) but skips the worker-ownership
+  check and also accepts `done` tasks, not just `taken` — for a task someone left half-finished (or
+  finished wrong) and never released themselves. Reachable via `POST /admin/tasks/:n/reset`.

@@ -11,6 +11,18 @@ export function createRepo(DB) {
     return out;
   };
 
+  // Setzt eine Aufgabe auf den Stand direkt nach dem Import zurück: eigene
+  // Zeilen löschen, korrigierte Artikelnummern rückgängig machen, Mengen leeren.
+  const resetLines = async (runId, n) => {
+    await DB.batch([
+      P('DELETE FROM lines WHERE run_id=? AND n=? AND added=1', runId, n),
+      P(`UPDATE lines SET itemcode=COALESCE(itemcode_soll, itemcode), itemcode_soll=NULL, menge=NULL, counted_at=NULL
+         WHERE run_id=? AND n=?`, runId, n),
+    ]);
+    await run('UPDATE tasks SET cnt=(SELECT COUNT(*) FROM lines WHERE run_id=? AND n=?) WHERE run_id=? AND n=?',
+      runId, n, runId, n);
+  };
+
   return {
     getSetting: async (k) => (await first('SELECT v FROM settings WHERE k=?', k))?.v ?? null,
     setSetting: (k, v) => run('INSERT INTO settings(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v', k, v),
@@ -50,13 +62,17 @@ export function createRepo(DB) {
         "UPDATE tasks SET status='open', worker=NULL, taken_at=NULL WHERE run_id=? AND n=? AND worker=? AND status='taken'",
         runId, n, worker);
       if (r.meta.changes !== 1) return false;
-      await DB.batch([
-        P('DELETE FROM lines WHERE run_id=? AND n=? AND added=1', runId, n),
-        P(`UPDATE lines SET itemcode=COALESCE(itemcode_soll, itemcode), itemcode_soll=NULL, menge=NULL, counted_at=NULL
-           WHERE run_id=? AND n=?`, runId, n),
-      ]);
-      await run('UPDATE tasks SET cnt=(SELECT COUNT(*) FROM lines WHERE run_id=? AND n=?) WHERE run_id=? AND n=?',
-        runId, n, runId, n);
+      await resetLines(runId, n);
+      return true;
+    },
+    // Admin-Variante von releaseTask: kein Worker-Abgleich, funktioniert auch
+    // für bereits abgegebene ('done') Aufgaben — für vergessene/liegengelassene Aufgaben.
+    async adminResetTask(runId, n) {
+      const r = await run(
+        "UPDATE tasks SET status='open', worker=NULL, taken_at=NULL, done_at=NULL WHERE run_id=? AND n=? AND status<>'open'",
+        runId, n);
+      if (r.meta.changes !== 1) return false;
+      await resetLines(runId, n);
       return true;
     },
     completeTask: (runId, n, worker, ts) =>

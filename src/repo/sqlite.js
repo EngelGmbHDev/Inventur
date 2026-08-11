@@ -13,6 +13,15 @@ export function createRepo(path, schemaPath) {
   const run = (sql, ...a) => db.prepare(sql).run(...a);
   const tx = (fn) => { db.exec('BEGIN'); try { fn(); db.exec('COMMIT'); } catch (e) { db.exec('ROLLBACK'); throw e; } };
 
+  // Setzt eine Aufgabe auf den Stand direkt nach dem Import zurück: eigene
+  // Zeilen löschen, korrigierte Artikelnummern rückgängig machen, Mengen leeren.
+  const resetLines = (runId, n) => {
+    run('DELETE FROM lines WHERE run_id=? AND n=? AND added=1', runId, n);
+    run(`UPDATE lines SET itemcode=COALESCE(itemcode_soll, itemcode), itemcode_soll=NULL, menge=NULL, counted_at=NULL
+         WHERE run_id=? AND n=?`, runId, n);
+    run('UPDATE tasks SET cnt=(SELECT COUNT(*) FROM lines WHERE run_id=? AND n=?) WHERE run_id=? AND n=?', runId, n, runId, n);
+  };
+
   return {
     // Einstellungen und Zugang
     getSetting: (k) => get('SELECT v FROM settings WHERE k=?', k)?.v ?? null,
@@ -58,11 +67,20 @@ export function createRepo(path, schemaPath) {
           "UPDATE tasks SET status='open', worker=NULL, taken_at=NULL WHERE run_id=? AND n=? AND worker=? AND status='taken'",
           runId, n, worker);
         ok = r.changes === 1;
-        if (!ok) return;
-        run('DELETE FROM lines WHERE run_id=? AND n=? AND added=1', runId, n);
-        run(`UPDATE lines SET itemcode=COALESCE(itemcode_soll, itemcode), itemcode_soll=NULL, menge=NULL, counted_at=NULL
-             WHERE run_id=? AND n=?`, runId, n);
-        run('UPDATE tasks SET cnt=(SELECT COUNT(*) FROM lines WHERE run_id=? AND n=?) WHERE run_id=? AND n=?', runId, n, runId, n);
+        if (ok) resetLines(runId, n);
+      });
+      return ok;
+    },
+    // Admin-Variante von releaseTask: kein Worker-Abgleich, funktioniert auch
+    // für bereits abgegebene ('done') Aufgaben — für vergessene/liegengelassene Aufgaben.
+    adminResetTask(runId, n) {
+      let ok = false;
+      tx(() => {
+        const r = run(
+          "UPDATE tasks SET status='open', worker=NULL, taken_at=NULL, done_at=NULL WHERE run_id=? AND n=? AND status<>'open'",
+          runId, n);
+        ok = r.changes === 1;
+        if (ok) resetLines(runId, n);
       });
       return ok;
     },

@@ -151,6 +151,13 @@ async function admin(seg, req, repo) {
       tasks: await repo.listTasks(RUN),
     });
 
+  if (cmd === 'tasks' && seg[2] === 'reset' && req.method === 'POST') {
+    const n = Number(seg[1]);
+    if (!Number.isInteger(n)) return json(400, { error: 'Ungültige Aufgabennummer' });
+    const ok = await repo.adminResetTask(RUN, n);
+    return ok ? json(200, { ok: true }) : json(404, { error: 'Aufgabe nicht gefunden oder bereits offen' });
+  }
+
   if (cmd === 'open' && req.method === 'POST') {
     const v = req.body?.open ? '1' : '0';
     await repo.setSetting('open', v);

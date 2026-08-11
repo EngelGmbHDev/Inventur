@@ -329,6 +329,32 @@ $('btnBack').onclick = async () => {
 window.addEventListener('online', () => { if (S.queue.size) flush(); });
 
 // ── Verwaltung ────────────────────────────────────────────────────────────
+function renderAdminTasks(tasks) {
+  $('adminTasks').innerHTML = tasks.map((t) => {
+    const label = t.status === 'open' ? 'frei'
+      : t.status === 'taken' ? `<b>${esc(t.worker)}</b> arbeitet daran`
+      : `<b>${esc(t.worker)}</b> abgegeben`;
+    return `<div class="arow" data-s="${t.status}">
+      <span class="n">${t.n}</span>
+      <span class="rng">${esc(t.von)} → ${esc(t.bis)} · ${t.cnt} Pos.</span>
+      <span class="who">${label}</span>
+      ${t.status !== 'open' ? `<button class="leer" data-reset="${t.n}">Leeren</button>` : ''}
+    </div>`;
+  }).join('');
+  for (const b of $('adminTasks').querySelectorAll('[data-reset]')) {
+    b.onclick = () => resetAdminTask(Number(b.dataset.reset));
+  }
+}
+
+async function resetAdminTask(n) {
+  if (!confirm(`Aufgabe ${n} wirklich leeren? Alle für diese Aufgabe erfassten Mengen und Änderungen gehen dabei verloren, sie wird wieder frei zur Vergabe.`)) return;
+  try {
+    await api(`/admin/tasks/${n}/reset`, { body: {} });
+    toast(`Aufgabe ${n} geleert`);
+    refreshAdmin();
+  } catch (e) { toast(e.message); }
+}
+
 async function refreshAdmin() {
   try {
     const d = await api('/admin/status');
@@ -339,6 +365,7 @@ async function refreshAdmin() {
     $('openState').textContent = d.open ? 'für Mitarbeiter freigegeben' : 'gesperrt';
     $('btnOpen').textContent = d.open ? 'Sperren' : 'Freigeben';
     $('btnOpen').onclick = async () => { await api('/admin/open', { body: { open: !d.open } }); refreshAdmin(); };
+    renderAdminTasks(d.tasks);
   } catch { /* Netzfehler/Token abgelaufen — nächster Versuch folgt, api() regelt den Logout */ }
 }
 

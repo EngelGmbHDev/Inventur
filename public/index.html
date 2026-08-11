@@ -114,6 +114,17 @@ textarea.field{letter-spacing:normal;font-size:13px;min-height:150px;line-height
 .switch .lbl span{display:block;font-weight:400;font-size:13px;color:var(--muted)}
 h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10px}
 
+.arow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:9px 12px;margin-bottom:6px}
+.arow .n{font:700 16px/1 var(--mono);min-width:24px}
+.arow .rng{font:12px/1.4 var(--mono);color:var(--muted);flex:1}
+.arow .who{font-size:13px;white-space:nowrap}
+.arow .who b{font-weight:600}
+.arow .st-taken .who b{color:#8A6D00}
+.arow .st-done .who b{color:var(--ok)}
+.arow .leer{background:none;border:1px solid var(--warn);color:var(--warn);border-radius:6px;
+  padding:5px 10px;font-size:12px;flex:none}
+
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);
   background:var(--ink);color:#fff;padding:11px 18px;border-radius:20px;
   font-size:14px;z-index:20;max-width:88vw;text-align:center}
@@ -177,6 +188,9 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <div class="lbl">Erfassung<span id="openState">gesperrt</span></div>
       <button class="btn" id="btnOpen">Freigeben</button>
     </div>
+
+    <h2>Aufgaben <span class="note" style="display:inline;margin:0">(wer arbeitet woran)</span></h2>
+    <div id="adminTasks"></div>
 
     <h2>Aufgaben laden</h2>
     <div class="pane">
