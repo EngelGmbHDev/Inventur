@@ -78,7 +78,6 @@ $('btnLogin').onclick = async () => {
   const pin = $('fPin').value.trim();
   if (!pin) return toast('Bitte Code eingeben');
   const worker = $('fWorker').value;
-  if (worker && !confirm(`Anmelden als „${worker}“?`)) return;
   try {
     const d = await api('/login', { body: { pin, worker } });
     S.token = d.token; S.role = d.role; S.worker = d.worker;
