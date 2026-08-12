@@ -48,6 +48,21 @@ wrangler d1 execute inventur --remote --command="$(node server/pinsql.js admin S
 leer lassen, Deploy command `npx wrangler deploy`. Die D1-Bindung und das Secret
 kommen aus `wrangler.toml` bzw. den Worker-Settings — nicht in das Repository legen.
 
+### Admin-Code später ändern (z. B. bei Verlust)
+
+Geht auch ohne Login, direkt gegen die Produktions-Datenbank — praktisch, falls
+man ausgesperrt ist:
+
+```bash
+wrangler d1 execute inventur --remote --command="$(node server/pinsql.js admin NeuerCode123)"
+```
+
+Für den selbst gehosteten Server (siehe oben) stattdessen:
+
+```bash
+node server/setpin.js admin NeuerCode123
+```
+
 ## Ablauf
 
 1. Als Verwaltung anmelden → „Durchgang leeren", falls noch Daten vom letzten Mal vorliegen.

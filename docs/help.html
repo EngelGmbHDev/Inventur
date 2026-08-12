@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Inventur — Anleitung</title>
+</head>
+<body>
+
+<h1>Inventur</h1>
+
+<h2>Kurzbeschreibung</h2>
+
+<p>
+Inventur ist die interne Anwendung zur Bestandsaufnahme der privaten Smartphones der
+Mitarbeiter. Die Arbeit wird in nummerierte Aufgaben unterteilt; jede Aufgabe kann immer
+nur von einer Person gleichzeitig bearbeitet werden. Es gibt zwei Rollen:
+<strong>Verwaltung</strong> (importiert Daten, gibt den Durchgang frei/sperrt ihn,
+exportiert das Ergebnis) und <strong>Mitarbeiter</strong> (übernimmt eine Aufgabe und
+zählt die Artikel je Lagerplatz).
+</p>
+
+<p>
+Dieselbe Fachlogik läuft unverändert auf zwei Plattformen: produktiv auf Cloudflare
+Workers, alternativ als abhängigkeitsfreier Node-Server für einen eigenen Host.
+</p>
+
+<h3>Wo befindet sich das</h3>
+
+<table>
+<tr><th>Was</th><th>Adresse</th></tr>
+<tr><td>Quellcode (GitHub)</td><td><a href="https://github.com/EngelGmbHDev/Inventur">https://github.com/EngelGmbHDev/Inventur</a></td></tr>
+<tr><td>Produktiv-Anwendung (Cloudflare)</td><td><a href="https://inventur.itadmin-27e.workers.dev/">https://inventur.itadmin-27e.workers.dev/</a></td></tr>
+</table>
+
+<p>
+Die Produktiv-URL ist der Link, der als QR-Code für die Mitarbeiter ausgehängt wird
+(siehe <code>docs/anleitung-mitarbeiter.md</code> im Repository).
+</p>
+
+<hr>
+
+<h2>Benutzerhandbuch</h2>
+
+<h3>Anmeldung</h3>
+
+<p>
+Auf der Startseite entweder <strong>„Verwaltung"</strong> wählen (ein gemeinsamer Code
+für die Leitung) oder den eigenen Namen aus der Liste — jeder Mitarbeiter hat einen
+persönlichen Zugangscode, den er vor Beginn von der Leitung erhält.
+</p>
+
+<h3>Ablauf für die Verwaltung</h3>
+
+<ol>
+<li>Anmelden → falls noch Daten vom letzten Durchgang vorliegen: <strong>„Durchgang leeren"</strong>.</li>
+<li>CSV mit den Lagerplätzen (<code>lagerplatz;itemcode;aufgabe_num</code>) und die
+    Mitarbeiterliste (<code>name;pincode</code>) einfügen oder als Datei hochladen →
+    <strong>„Laden und prüfen"</strong>. Jeder Mitarbeiter bekommt hier seinen eigenen
+    Code (mindestens 4 Zeichen). Geprüft werden doppelte Lagerplatz/Artikel-Paare sowie
+    Lagerplätze, die versehentlich in zwei Aufgaben auftauchen.</li>
+<li>Anzahl Aufgaben und Zeilen gegen die Quelle abgleichen.</li>
+<li><strong>„Freigeben"</strong> — erst danach sind die Aufgaben auf den Telefonen der
+    Mitarbeiter sichtbar und können übernommen werden.</li>
+<li>Über <strong>„Aufgabenliste anzeigen"</strong> lässt sich jederzeit einsehen, wer
+    woran arbeitet und wie weit jede Aufgabe ist; einzelne Aufgaben können hier bei
+    Bedarf zurückgesetzt werden (z. B. wenn jemand eine Aufgabe halb bearbeitet
+    liegen lässt).</li>
+<li>Zum Schluss <strong>„Sperren"</strong>, danach <strong>„CSV herunterladen"</strong>
+    für das Ergebnis.</li>
+</ol>
+
+<h3>Ablauf für Mitarbeiter</h3>
+
+<ol>
+<li>Namen aus der Liste wählen.</li>
+<li>Persönlichen Zugangscode eingeben — den gibt es von der Leitung.</li>
+<li>Eine freie Aufgabe antippen — sie gehört danach nur diesem Mitarbeiter, niemand
+    anderes kann sie gleichzeitig bearbeiten.</li>
+<li>Pro Lagerplatz die gezählte Menge eintragen.</li>
+<li>Liegt ein anderer Artikel dort als erwartet? Auf die Artikelnummer tippen
+    (Stift-Symbol ✎) und die richtige Nummer eintragen. Die ursprünglich erwartete
+    Nummer bleibt im Export als „Soll"-Wert erhalten.</li>
+<li>Liegt zusätzlich noch etwas an dem Platz? Ganz unten in der Liste
+    <strong>„Zusätzlicher Artikel am Platz"</strong> nutzen.</li>
+<li>Alles erfasst? Unten auf <strong>„Abgeben"</strong> tippen.</li>
+</ol>
+
+<h3>Farben am linken Rand jeder Zeile</h3>
+
+<table>
+<tr><th>Farbe</th><th>Bedeutung</th></tr>
+<tr><td>Grau</td><td>noch nicht gezählt</td></tr>
+<tr><td>Gelb</td><td>erfasst, aber noch nicht zum Server übertragen (z. B. kein Netz)</td></tr>
+<tr><td>Grün</td><td>gespeichert</td></tr>
+</table>
+
+<p>
+Ohne Netzverbindung bleibt eine Zeile gelb und die Übertragung wird automatisch alle
+15 Sekunden erneut versucht — nichts geht verloren, es muss nichts neu eingegeben
+werden. <strong>„Abgeben"</strong> lässt sich erst antippen, wenn keine Zeile mehr
+offen ist.
+</p>
+
+<h3>Sonderfälle</h3>
+
+<ul>
+<li><strong>Aus Versehen die falsche Aufgabe geöffnet?</strong> Unten auf
+    <strong>„Aufgabe verlassen"</strong> tippen — sie wird wieder freigegeben, alle
+    bisher für diese Aufgabe erfassten Werte werden dabei gelöscht.</li>
+<li><strong>Gerät wird mit Kolleginnen/Kollegen geteilt?</strong> Nach der eigenen
+    Zählung bitte oben rechts auf <strong>„Ausloggen"</strong> tippen, bevor die/der
+    Nächste startet.</li>
+<li><strong>Fragen oder Probleme?</strong> Bitte an die Leitung wenden.</li>
+</ul>
+
+<p>
+Eine kurze Version dieser Anleitung ist auch direkt in der App über
+<strong>„Anleitung anzeigen"</strong> auf der Anmeldeseite abrufbar, sowie als
+druckbares Blatt in <code>docs/anleitung-mitarbeiter.md</code> zum Aushängen neben
+dem QR-Code.
+</p>
+
+<hr>
+
+<h2>IT-Handbuch</h2>
+
+<h3>Architektur</h3>
+
+<p>
+Die Fachlogik (Anmeldung, Aufgabenvergabe, CSV-Import, Export) liegt vollständig in
+<code>src/handlers.js</code> und ist plattformunabhängig — sie referenziert keine
+Cloudflare-spezifischen Objekte. Zwei dünne Adapter binden dieselbe Logik an
+unterschiedliche Laufzeitumgebungen:
+</p>
+
+<table>
+<tr><th>Pfad</th><th>Zweck</th></tr>
+<tr><td><code>public/</code></td><td>Statisches Frontend (Vanilla JS, kein Build-Schritt), auf beiden Plattformen unverändert ausgeliefert</td></tr>
+<tr><td><code>src/handlers.js</code></td><td>Alle Fachregeln: Login, Aufgabenvergabe, CSV-Import, Export</td></tr>
+<tr><td><code>src/auth.js</code></td><td>PBKDF2 (PIN-Hashing) + HMAC (Bearer-Token) über WebCrypto</td></tr>
+<tr><td><code>src/repo/d1.js</code></td><td>Datenzugriff für Cloudflare D1 (asynchron, gebündelt)</td></tr>
+<tr><td><code>src/repo/sqlite.js</code></td><td>Datenzugriff für node:sqlite (synchron, echte Transaktionen)</td></tr>
+<tr><td><code>worker/index.js</code></td><td>Adapter Cloudflare Workers (~35 Zeilen): routet <code>/api/*</code>, alles andere über die ASSETS-Bindung</td></tr>
+<tr><td><code>server/index.js</code></td><td>Adapter Node: <code>node:http</code> + <code>node:sqlite</code>, ohne npm-Abhängigkeiten</td></tr>
+<tr><td><code>schema.sql</code></td><td>Alleinige Quelle für das Datenbankschema (SQLite-Dialekt, von beiden Adaptern genutzt)</td></tr>
+</table>
+
+<p>
+Wichtig für Änderungen: Ein Schema-Update in <code>schema.sql</code> muss identisch in
+<code>src/repo/d1.js</code> und <code>src/repo/sqlite.js</code> nachgezogen werden —
+das sind zwei unabhängige Kopien desselben SQL.
+</p>
+
+<h3>Eigener Server (Self-Hosting)</h3>
+
+<p>Voraussetzung: Node ≥ 24 (oder Node 22 mit <code>--experimental-sqlite</code>).</p>
+
+<pre>
+openssl rand -hex 32                      # → TOKEN_SECRET
+node server/setpin.js admin ACHTSTELLIG   # Code für die Verwaltung setzen (mind. 8 Zeichen)
+TOKEN_SECRET=... node server/index.js     # → http://localhost:8080
+</pre>
+
+<p>Mit Docker:</p>
+
+<pre>
+docker compose up -d
+docker compose exec inventur node server/setpin.js admin ...
+</pre>
+
+<p>
+Vor dem ersten Start die Domain in <code>compose.yaml</code> an das eigene Traefik-Setup
+anpassen (aktuell als Platzhalter: <code>inventur.example.de</code>).
+</p>
+
+<h3>Cloudflare Workers (Produktivbetrieb)</h3>
+
+<p>
+Ein Worker liefert sowohl die Statik aus <code>public/</code> (Asset-Bindung) als auch
+die API unter <code>/api/*</code> aus. Reihenfolge beim Erstaufbau: erst die
+D1-Datenbank anlegen, das Schema anwenden, dann deployen.
+</p>
+
+<pre>
+wrangler d1 create inventur          # id → in wrangler.toml eintragen
+wrangler d1 execute inventur --remote --file=schema.sql
+wrangler deploy
+wrangler secret put TOKEN_SECRET     # openssl rand -hex 32
+
+wrangler d1 execute inventur --remote --command="$(node server/pinsql.js admin Sommer2026)"
+</pre>
+
+<p>
+<strong>Wichtig:</strong> Ein einfaches <code>git push</code> löst kein Deployment aus —
+es ist keine Workers-Builds/Git-Anbindung für dieses Repository eingerichtet.
+Produktiv wird nur aktualisiert, wenn jemand manuell <code>wrangler deploy</code>
+ausführt. Ebenso wenden weder <code>schema.sql</code> noch die Secrets sich automatisch
+an — das sind separate, einmalige, manuelle Schritte gegen die produktive
+D1-Datenbank bzw. den Account.
+</p>
+
+<p>
+Die <code>database_id</code> in <code>wrangler.toml</code> muss zu einer tatsächlich
+existierenden D1-Datenbank passen (<code>wrangler d1 list</code>) — eine veraltete oder
+falsche ID lässt den Worker für <em>jede</em> Anfrage mit Cloudflare-Fehler 1101
+fehlschlagen, noch bevor die eigentliche Anwendungslogik greift, und taucht auch nicht
+in <code>wrangler tail</code> auf.
+</p>
+
+<h3>Admin-Code zurücksetzen (z. B. bei Verlust)</h3>
+
+<p>Geht ohne Login, direkt gegen die produktive Datenbank — praktisch bei Aussperrung:</p>
+
+<pre>
+wrangler d1 execute inventur --remote --command="$(node server/pinsql.js admin NeuerCode123)"
+</pre>
+
+<p>Für den eigenen Server stattdessen:</p>
+
+<pre>
+node server/setpin.js admin NeuerCode123
+</pre>
+
+<h3>Aktuelle Cloudflare-Konfiguration</h3>
+
+<table>
+<tr><th>Einstellung</th><th>Wert</th></tr>
+<tr><td>Worker-Name</td><td><code>inventur</code></td></tr>
+<tr><td>D1-Datenbankname</td><td><code>inventur</code></td></tr>
+<tr><td>Einstiegspunkt</td><td><code>worker/index.js</code></td></tr>
+</table>
+
+<p>
+Details siehe <code>wrangler.toml</code> im Repository (die Datenbank-ID sowie das
+<code>TOKEN_SECRET</code> gehören dort nicht ins Repository, sondern werden über
+Wrangler-Befehle bzw. die Worker-Settings gesetzt).
+</p>
+
+<h3>Sonstiges</h3>
+
+<ul>
+<li>Es gibt keine Test-Suite, keinen Linter und keine CI-Pipeline in diesem Repository.</li>
+<li><code>RUN = 1</code> in <code>src/handlers.js</code> ist aktuell ein fest
+    verdrahteter, einzelner aktiver Durchgang; <code>run_id</code> ist zwar bereits
+    durchs Schema und die Datenzugriffs-Schicht durchgereicht, wird aber noch nicht
+    für mehrere parallele Durchgänge genutzt.</li>
+</ul>
+
+</body>
+</html>
