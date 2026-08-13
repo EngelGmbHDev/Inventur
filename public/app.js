@@ -459,9 +459,7 @@ $('btnImport').onclick = async () => {
   if (!csv.trim()) return toast('Bitte CSV einfügen');
   $('importProblems').classList.add('hide');
   try {
-    const d = await api('/admin/import', {
-      body: { csv, workersCsv: $('fWorkers').value },
-    });
+    const d = await api('/admin/import', { body: { csv } });
     toast(`Geladen: ${d.tasks} Aufgaben, ${d.lines} Zeilen`);
     if (d.problems?.length) {
       $('importProblems').innerHTML = `<b>${d.problems.length} Problem(e) beim Import — bitte prüfen:</b>
@@ -469,6 +467,21 @@ $('btnImport').onclick = async () => {
       $('importProblems').classList.remove('hide');
     }
     openAdmin();
+  } catch (e) { toast(e.message); }
+};
+
+$('btnImportWorkers').onclick = async () => {
+  const workersCsv = $('fWorkers').value;
+  if (!workersCsv.trim()) return toast('Bitte Mitarbeiterliste einfügen');
+  $('importWorkersProblems').classList.add('hide');
+  try {
+    const d = await api('/admin/import-workers', { body: { workersCsv } });
+    toast(`Geladen: ${d.workers} Mitarbeiter`);
+    if (d.problems?.length) {
+      $('importWorkersProblems').innerHTML = `<b>${d.problems.length} Problem(e) beim Import — bitte prüfen:</b>
+        <ul style="margin:6px 0 0;padding-left:18px">${d.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
+      $('importWorkersProblems').classList.remove('hide');
+    }
     loadWorkerList();
   } catch (e) { toast(e.message); }
 };

@@ -117,21 +117,23 @@ export function createRepo(DB) {
       P('DELETE FROM tasks WHERE run_id=?', runId),
       P('DELETE FROM workers WHERE run_id=?', runId),
     ]),
-    async importRun(runId, rows, workers) {
+    async importRun(runId, rows) {
       await DB.batch([
         P('DELETE FROM lines WHERE run_id=?', runId),
         P('DELETE FROM tasks WHERE run_id=?', runId),
-        P('DELETE FROM workers WHERE run_id=?', runId),
       ]);
       for (const part of chunk(rows, 400))
         await DB.batch(part.map((r) =>
           P('INSERT INTO lines(run_id,n,lagerplatz,itemcode) VALUES(?,?,?,?)', runId, r.n, r.lagerplatz, r.itemcode)));
-      if (workers.length)
-        await DB.batch(workers.map((w) =>
-          P('INSERT OR IGNORE INTO workers(run_id,name,pin) VALUES(?,?,?)', runId, w.name, w.pin)));
       await run(`INSERT INTO tasks(run_id,n,von,bis,cnt)
                  SELECT ?, n, MIN(lagerplatz), MAX(lagerplatz), COUNT(*)
                  FROM lines WHERE run_id=? GROUP BY n`, runId, runId);
+    },
+    async importWorkers(runId, workers) {
+      await run('DELETE FROM workers WHERE run_id=?', runId);
+      if (workers.length)
+        await DB.batch(workers.map((w) =>
+          P('INSERT OR IGNORE INTO workers(run_id,name,pin) VALUES(?,?,?)', runId, w.name, w.pin)));
     },
     listWorkers: async (runId) => (await all('SELECT name FROM workers WHERE run_id=? ORDER BY name', runId)).map((r) => r.name),
     listWorkersFull: (runId) => all('SELECT name, pin FROM workers WHERE run_id=? ORDER BY name', runId),

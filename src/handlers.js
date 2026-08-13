@@ -216,9 +216,14 @@ async function admin(seg, req, repo) {
       return json(409, { error: 'Im Durchgang gibt es bereits vergebene oder abgegebene Aufgaben. Bitte zuerst leeren.' });
     const parsed = parseCsv(String(req.body?.csv ?? ''));
     if (parsed.error) return json(400, { error: parsed.error });
+    await repo.importRun(RUN, parsed.rows);
+    return json(200, { ...(await repo.summary(RUN)), problems: parsed.problems });
+  }
+
+  if (cmd === 'import-workers' && req.method === 'POST') {
     const wParsed = parseWorkers(String(req.body?.workersCsv ?? ''));
-    await repo.importRun(RUN, parsed.rows, wParsed.workers);
-    return json(200, { ...(await repo.summary(RUN)), problems: [...parsed.problems, ...wParsed.problems] });
+    await repo.importWorkers(RUN, wParsed.workers);
+    return json(200, { workers: wParsed.workers.length, problems: wParsed.problems });
   }
 
   if (cmd === 'reset' && req.method === 'POST') {
