@@ -170,6 +170,32 @@ async function admin(seg, req, repo) {
     return ok ? json(200, { ok: true }) : json(404, { error: 'Aufgabe nicht gefunden oder bereits offen' });
   }
 
+  if (cmd === 'workers' && seg.length === 1 && req.method === 'GET')
+    return json(200, { workers: await repo.listWorkersFull(RUN) });
+
+  if (cmd === 'workers' && seg.length === 1 && req.method === 'POST') {
+    const name = String(req.body?.name ?? '').trim();
+    const pin = String(req.body?.pin ?? '').trim();
+    if (!name) return json(400, { error: 'Name fehlt' });
+    if (pin.length < 4) return json(400, { error: 'Code zu kurz (mind. 4 Zeichen)' });
+    const ok = await repo.addWorker(RUN, name, pin);
+    return ok ? json(200, { ok: true }) : json(409, { error: 'Mitarbeiter existiert bereits' });
+  }
+
+  if (cmd === 'workers' && seg[2] === 'pin' && req.method === 'POST') {
+    const name = decodeURIComponent(seg[1] ?? '');
+    const pin = String(req.body?.pin ?? '').trim();
+    if (pin.length < 4) return json(400, { error: 'Code zu kurz (mind. 4 Zeichen)' });
+    const ok = await repo.setWorkerPin(RUN, name, pin);
+    return ok ? json(200, { ok: true }) : json(404, { error: 'Mitarbeiter nicht gefunden' });
+  }
+
+  if (cmd === 'workers' && seg[2] === 'remove' && req.method === 'POST') {
+    const name = decodeURIComponent(seg[1] ?? '');
+    const ok = await repo.removeWorker(RUN, name);
+    return ok ? json(200, { ok: true }) : json(404, { error: 'Mitarbeiter nicht gefunden' });
+  }
+
   if (cmd === 'open' && req.method === 'POST') {
     const v = req.body?.open ? '1' : '0';
     await repo.setSetting('open', v);

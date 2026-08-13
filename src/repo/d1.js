@@ -134,8 +134,21 @@ export function createRepo(DB) {
                  FROM lines WHERE run_id=? GROUP BY n`, runId, runId);
     },
     listWorkers: async (runId) => (await all('SELECT name FROM workers WHERE run_id=? ORDER BY name', runId)).map((r) => r.name),
+    listWorkersFull: (runId) => all('SELECT name, pin FROM workers WHERE run_id=? ORDER BY name', runId),
     getWorkerPin: async (runId, name) =>
       (await first('SELECT pin FROM workers WHERE run_id=? AND name=?', runId, name))?.pin ?? null,
+    async addWorker(runId, name, pin) {
+      const r = await run('INSERT OR IGNORE INTO workers(run_id,name,pin) VALUES(?,?,?)', runId, name, pin);
+      return r.meta.changes === 1;
+    },
+    async setWorkerPin(runId, name, pin) {
+      const r = await run('UPDATE workers SET pin=? WHERE run_id=? AND name=?', pin, runId, name);
+      return r.meta.changes === 1;
+    },
+    async removeWorker(runId, name) {
+      const r = await run('DELETE FROM workers WHERE run_id=? AND name=?', runId, name);
+      return r.meta.changes === 1;
+    },
     async summary(runId) {
       const q = async (sql) => (await first(sql, runId)).c;
       return {

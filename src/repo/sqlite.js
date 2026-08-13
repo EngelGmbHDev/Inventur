@@ -150,7 +150,20 @@ export function createRepo(path, schemaPath) {
       });
     },
     listWorkers: (runId) => all('SELECT name FROM workers WHERE run_id=? ORDER BY name', runId).map((r) => r.name),
+    listWorkersFull: (runId) => all('SELECT name, pin FROM workers WHERE run_id=? ORDER BY name', runId),
     getWorkerPin: (runId, name) => get('SELECT pin FROM workers WHERE run_id=? AND name=?', runId, name)?.pin ?? null,
+    addWorker(runId, name, pin) {
+      const r = run('INSERT OR IGNORE INTO workers(run_id,name,pin) VALUES(?,?,?)', runId, name, pin);
+      return r.changes === 1;
+    },
+    setWorkerPin(runId, name, pin) {
+      const r = run('UPDATE workers SET pin=? WHERE run_id=? AND name=?', pin, runId, name);
+      return r.changes === 1;
+    },
+    removeWorker(runId, name) {
+      const r = run('DELETE FROM workers WHERE run_id=? AND name=?', runId, name);
+      return r.changes === 1;
+    },
     summary: (runId) => ({
       lines: get('SELECT COUNT(*) c FROM lines WHERE run_id=?', runId).c,
       tasks: get('SELECT COUNT(*) c FROM tasks WHERE run_id=?', runId).c,

@@ -126,6 +126,11 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
 .arow .st-done .who b{color:var(--ok)}
 .arow .leer{background:none;border:1px solid var(--warn);color:var(--warn);border-radius:6px;
   padding:5px 10px;font-size:12px;flex:none}
+.arow .wname{flex:1;font:600 14px/1.4 var(--sans)}
+.arow .wpin{width:90px;padding:6px 8px;font:600 14px/1 var(--mono);
+  border:2px solid var(--line);border-radius:6px;flex:none}
+.arow .save{background:none;border:1px solid var(--ok);color:var(--ok);border-radius:6px;
+  padding:5px 10px;font-size:12px;flex:none}
 
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);
   background:var(--ink);color:#fff;padding:11px 18px;border-radius:20px;
@@ -214,7 +219,8 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <button class="btn" id="btnOpen">Freigeben</button>
     </div>
 
-    <button class="btn wide" id="btnShowTasks" style="margin-bottom:22px">Aufgabenliste anzeigen (wer arbeitet woran)</button>
+    <button class="btn wide" id="btnShowTasks" style="margin-bottom:10px">Aufgabenliste anzeigen (wer arbeitet woran)</button>
+    <button class="btn wide" id="btnShowWorkers" style="margin-bottom:22px">Mitarbeiter verwalten</button>
 
     <h2>Aufgaben laden</h2>
     <div class="pane">
@@ -247,6 +253,17 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
   <!-- Aufgabenliste (Verwaltung) -->
   <section id="vAdminTasks" class="hide">
     <div id="adminTasks"></div>
+  </section>
+
+  <!-- Mitarbeiterverwaltung -->
+  <section id="vAdminWorkers" class="hide">
+    <div class="pane">
+      <h3 style="margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Neuer Mitarbeiter</h3>
+      <input class="field" id="wNewName" placeholder="Name" autocomplete="off">
+      <input class="field" id="wNewPin" placeholder="Code (mind. 4 Zeichen)" inputmode="numeric" autocomplete="off">
+      <button class="btn wide" id="btnAddWorker">Hinzufügen</button>
+    </div>
+    <div id="workerList" style="margin-top:16px"></div>
   </section>
 </main>
 

@@ -35,7 +35,7 @@ function toast(msg) {
 
 // ── Navigation ────────────────────────────────────────────────────────────
 function show(view, title, sub, opts = {}) {
-  for (const v of ['vLogin', 'vTasks', 'vCount', 'vAdmin', 'vHelp', 'vAdminTasks']) $(v).classList.toggle('hide', v !== view);
+  for (const v of ['vLogin', 'vTasks', 'vCount', 'vAdmin', 'vHelp', 'vAdminTasks', 'vAdminWorkers']) $(v).classList.toggle('hide', v !== view);
   $('hTitle').textContent = title;
   $('hSub').textContent = sub;
   $('tape').classList.toggle('hide', view !== 'vCount');
@@ -379,6 +379,66 @@ async function openAdmin() {
 }
 
 $('btnShowTasks').onclick = () => show('vAdminTasks', 'Aufgabenliste', S.worker, { back: true });
+
+// ── Mitarbeiterverwaltung ─────────────────────────────────────────────────
+function renderWorkers(workers) {
+  $('workerList').innerHTML = workers.map((w) => `<div class="arow" data-name="${esc(w.name)}">
+    <span class="wname">${esc(w.name)}</span>
+    <input class="wpin" value="${esc(w.pin ?? '')}" inputmode="numeric" autocomplete="off">
+    <button class="save" data-save="${esc(w.name)}">Speichern</button>
+    <button class="leer" data-remove="${esc(w.name)}">Entfernen</button>
+  </div>`).join('') || '<p class="note">Noch keine Mitarbeiter.</p>';
+
+  for (const b of $('workerList').querySelectorAll('[data-save]')) {
+    b.onclick = () => saveWorkerPin(b.dataset.save);
+  }
+  for (const b of $('workerList').querySelectorAll('[data-remove]')) {
+    b.onclick = () => removeWorker(b.dataset.remove);
+  }
+}
+
+async function loadWorkers() {
+  try {
+    const d = await api('/admin/workers');
+    renderWorkers(d.workers);
+  } catch (e) { toast(e.message); }
+}
+
+async function saveWorkerPin(name) {
+  const row = $('workerList').querySelector(`.arow[data-name="${CSS.escape(name)}"]`);
+  const pin = row.querySelector('.wpin').value.trim();
+  if (pin.length < 4) return toast('Code zu kurz (mind. 4 Zeichen)');
+  try {
+    await api(`/admin/workers/${encodeURIComponent(name)}/pin`, { body: { pin } });
+    toast('Code geändert');
+  } catch (e) { toast(e.message); }
+}
+
+async function removeWorker(name) {
+  if (!confirm(`„${name}" wirklich entfernen?`)) return;
+  try {
+    await api(`/admin/workers/${encodeURIComponent(name)}/remove`, { body: {} });
+    toast('Entfernt');
+    loadWorkers();
+    loadWorkerList();
+  } catch (e) { toast(e.message); }
+}
+
+$('btnShowWorkers').onclick = () => { show('vAdminWorkers', 'Mitarbeiter', S.worker, { back: true }); loadWorkers(); };
+
+$('btnAddWorker').onclick = async () => {
+  const name = $('wNewName').value.trim();
+  const pin = $('wNewPin').value.trim();
+  if (!name) return toast('Name eingeben');
+  if (pin.length < 4) return toast('Code zu kurz (mind. 4 Zeichen)');
+  try {
+    await api('/admin/workers', { body: { name, pin } });
+    $('wNewName').value = ''; $('wNewPin').value = '';
+    toast('Mitarbeiter hinzugefügt');
+    loadWorkers();
+    loadWorkerList();
+  } catch (e) { toast(e.message); }
+};
 
 $('fCsvFile').onchange = async () => {
   const file = $('fCsvFile').files[0];

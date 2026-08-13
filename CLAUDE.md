@@ -93,9 +93,11 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   (PBKDF2) in the `auth` table, entered with no worker name. **Workers** are individual — each
   gets their own PIN, stored as **plain text** in `workers.pin` (deliberate: low-stakes internal
   tool, and it lets the admin actually see/debug a worker's code, which a hash wouldn't allow).
-  Worker PINs are set only via CSV import (`parseWorkers`, format `name;pincode`, min. 4 chars) —
-  there's no runtime "change worker PIN" endpoint. Login requires name selected first, then that
-  worker's exact PIN checked directly against `workers.pin` — no lookup by PIN alone.
+  Worker PINs are set via CSV import (`parseWorkers`, format `name;pincode`, min. 4 chars) for bulk
+  setup, or individually via `POST /admin/workers` (add), `POST /admin/workers/:name/pin` (change),
+  `POST /admin/workers/:name/remove` — `:name` is URL-encoded since names can contain spaces. Login
+  requires name selected first, then that worker's exact PIN checked directly against
+  `workers.pin` — no lookup by PIN alone.
 - CSV import (`lagerplatz;itemcode;aufgabe_num`) rejects duplicate lagerplatz/itemcode pairs and
   flags any lagerplatz that spans two tasks (`parseCsv` in handlers.js). `itemcode` may be empty —
   that represents a lagerplatz that's expected to be empty (worker just confirms `menge=0`, or
