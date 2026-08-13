@@ -447,10 +447,20 @@ $('fCsvFile').onchange = async () => {
   $('fCsvFile').value = '';
 };
 
+// Nur name;pincode verlassen den Browser — weitere Spalten (z.B. Klarnamen)
+// werden hier abgeschnitten, bevor irgendwas an den Server geht.
+function trimWorkersCsv(text) {
+  return text.split(/\r?\n/).map((line) => {
+    if (!line.trim()) return line;
+    const delim = line.includes(';') ? ';' : ',';
+    return line.split(delim).slice(0, 2).join(';');
+  }).join('\n');
+}
+
 $('fWorkersFile').onchange = async () => {
   const file = $('fWorkersFile').files[0];
   if (!file) return;
-  $('fWorkers').value = await file.text();
+  $('fWorkers').value = trimWorkersCsv(await file.text());
   $('fWorkersFile').value = '';
 };
 
@@ -471,7 +481,7 @@ $('btnImport').onclick = async () => {
 };
 
 $('btnImportWorkers').onclick = async () => {
-  const workersCsv = $('fWorkers').value;
+  const workersCsv = trimWorkersCsv($('fWorkers').value);
   if (!workersCsv.trim()) return toast('Bitte Mitarbeiterliste einfügen');
   $('importWorkersProblems').classList.add('hide');
   try {

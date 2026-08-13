@@ -239,7 +239,8 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <label for="fWorkers">CSV: name ; pincode (mind. 4 Zeichen, je Mitarbeiter eigener Code)</label>
       <textarea class="field" id="fWorkers" style="min-height:80px" placeholder="Mike Kotz;8945&#10;Anna Beispiel;1234"></textarea>
       <p class="note" style="margin:0 0 10px">Ersetzt die komplette Mitarbeiterliste — für einzelne Änderungen
-        eignet sich "Mitarbeiter verwalten" oben besser.</p>
+        eignet sich "Mitarbeiter verwalten" oben besser. Weitere Spalten (z. B. Klarnamen) werden
+        automatisch entfernt, bevor irgendetwas gesendet wird — nur Name und Code verlassen den Browser.</p>
       <button class="btn wide" id="btnImportWorkers">Laden und prüfen</button>
       <div class="err hide" id="importWorkersProblems" style="margin:12px 0 0;max-height:240px;overflow:auto"></div>
     </div>

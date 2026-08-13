@@ -98,6 +98,12 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   `POST /admin/workers/:name/remove` — `:name` is URL-encoded since names can contain spaces. Login
   requires name selected first, then that worker's exact PIN checked directly against
   `workers.pin` — no lookup by PIN alone.
+- The worker-CSV file upload and the "Laden und prüfen" button both run input through
+  `trimWorkersCsv` (app.js) first, which drops every column past the second (`;`-delimited) —
+  this app runs on a public server, so a source file with a third "real name" column (common when
+  the loginname is a pseudonym like `user01`) must never leave the browser. `parseWorkers` on the
+  server only ever reads the first two columns anyway, but the client-side trim means that data
+  is never even transmitted, not just "not stored". Keep this in mind if the CSV format changes.
 - Task import (`POST /admin/import`, `lagerplatz;itemcode;aufgabe_num`) and worker import
   (`POST /admin/import-workers`, `name;pincode`) are fully independent — separate buttons in the
   UI, separate repo calls (`importRun` / `importWorkers`), neither touches the other's tables.

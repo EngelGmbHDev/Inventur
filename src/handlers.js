@@ -300,7 +300,7 @@ export function parseWorkers(text) {
   if (!raw.length) return { workers: [], problems: [] };
 
   const delim = (raw[0].match(/;/g) || []).length >= (raw[0].match(/,/g) || []).length ? ';' : ',';
-  if (/^name/i.test(raw[0])) raw.shift();
+  if (/name|pincode|login/i.test(raw[0])) raw.shift();
 
   const workers = [], problems = [];
   const seen = new Set();
