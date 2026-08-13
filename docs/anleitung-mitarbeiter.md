@@ -13,7 +13,8 @@
 2. **Ihren Namen aus der Liste wählen.**
 3. **Ihren persönlichen Zugangscode eingeben.** Den Code bekommen Sie von der Leitung.
 4. **Eine freie Aufgabe antippen.** Eine Aufgabe ist ein Bereich von Lagerplätzen — sie gehört danach nur Ihnen, niemand anderes kann sie gleichzeitig bearbeiten.
-5. **Pro Lagerplatz die gezählte Menge eintragen.**
+5. **Pro Lagerplatz die gezählte Menge eintragen.** Achtung: Nicht jeder Lagerplatz vor Ort steht in
+   der Liste — inaktive Plätze fehlen absichtlich, eine Lücke in der Nummerierung ist also normal.
 6. **Liegt ein anderer Artikel dort als erwartet?** Auf die Artikelnummer tippen (Stift-Symbol ✎) und die richtige Nummer eintragen.
 7. **Liegt zusätzlich noch etwas an dem Platz?** Ganz unten in der Liste "Zusätzlicher Artikel am Platz" nutzen.
 8. **Alles erfasst?** Unten auf **"Abgeben"** tippen.
