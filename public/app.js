@@ -250,8 +250,16 @@ function onEdit(inp) {
   const raw = inp.value.trim().replace(',', '.');
   if (raw !== '' && !Number.isFinite(Number(raw))) { toast('Bitte Zahl eingeben'); inp.focus(); return; }
 
+  const num = raw === '' ? null : Number(raw);
+  const line = S.lines.find((l) => l.id === id);
+  if (num !== null && num > 0 && line && !line.itemcode) {
+    toast('Erst Artikel eintragen (✎), dann Menge angeben');
+    inp.value = line.menge === null ? '' : String(line.menge);
+    return;
+  }
+
   const buf = readBuf(S.task);
-  buf[id] = raw === '' ? '' : Number(raw);
+  buf[id] = raw === '' ? '' : num;
   writeBuf(S.task, buf);
   row.dataset.s = 'dirty';
   S.queue.add(id);

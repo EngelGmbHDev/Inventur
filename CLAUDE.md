@@ -112,6 +112,10 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   (worker just confirms `menge=0`, or corrects the itemcode in place if something is actually
   found there). Both imports fully replace their table for the run — re-importing workers wipes
   everyone not in the new list, including anyone added individually via the worker-management page.
+- A line with an empty `itemcode` can only take `menge<=0` — a positive quantity requires an
+  itemcode first (checked both client-side in `onEdit`, app.js, and server-side in the `lines`
+  POST action, which silently drops offending updates rather than erroring). `0` stays valid so a
+  worker can still confirm a lagerplatz is genuinely empty without naming an item.
 - A task must be `open` to be claimed, and claiming is a single conditional UPDATE (`status='open'`
   in the WHERE clause) so two workers racing for the same task can't both succeed. The same UPDATE
   also carries a `NOT EXISTS` check against `worker`'s other `taken` tasks, so a worker can only

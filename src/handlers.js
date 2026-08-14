@@ -101,10 +101,15 @@ async function tasks(seg, req, repo, who) {
     return json(200, { lines: await repo.getLines(RUN, n) });
 
   if (action === 'lines' && req.method === 'POST') {
+    const current = await repo.getLines(RUN, n);
+    const itemcodeById = new Map(current.map((l) => [l.id, l.itemcode]));
     const upd = (req.body?.lines ?? [])
       .filter((l) => Number.isInteger(l.id))
       .map((l) => ({ id: l.id, menge: l.menge === null || l.menge === '' ? null : Number(l.menge) }))
-      .filter((l) => l.menge === null || Number.isFinite(l.menge));
+      .filter((l) => l.menge === null || Number.isFinite(l.menge))
+      // Menge > 0 ohne Artikel ergibt fachlich keinen Sinn (Menge wovon?) — 0 bleibt erlaubt,
+      // um einen laut Import leeren Lagerplatz als tatsächlich leer zu bestätigen.
+      .filter((l) => l.menge === null || l.menge <= 0 || itemcodeById.get(l.id));
     await repo.saveLines(RUN, n, upd, now());
     return json(200, { saved: upd.length });
   }
