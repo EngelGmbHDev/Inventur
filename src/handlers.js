@@ -239,9 +239,9 @@ async function admin(seg, req, repo) {
 
   if (cmd === 'export') {
     const rows = await repo.exportRows(RUN);
-    const head = 'aufgabe;lagerplatz;itemcode;menge;buchbestand;buchartikel;status;gezaehlt_von;zeitpunkt\n';
+    const head = 'whscode;aufgabe;lagerplatz;itemcode;menge;buchbestand;buchartikel;status;gezaehlt_von;zeitpunkt\n';
     const body = rows.map((r) => [
-      r.n, r.lagerplatz, r.itemcode,
+      r.whscode ?? '', r.n, r.lagerplatz, r.itemcode,
       r.menge === null ? '' : String(r.menge).replace('.', ','),
       r.buchbestand === null ? '' : String(r.buchbestand).replace('.', ','),
       r.itemcode_soll ?? '',
@@ -274,7 +274,8 @@ export function parseCsv(text) {
 
   raw.forEach((line, i) => {
     const c = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
-    const [lagerplatz, itemcodeRaw, aufgabe, buchbestandRaw] = c;
+    const [whscodeRaw, lagerplatz, itemcodeRaw, aufgabe, buchbestandRaw] = c;
+    const whscode = whscodeRaw || null;
     const itemcode = itemcodeRaw ?? '';
     const n = Number(aufgabe);
     const buchbestand = !buchbestandRaw ? null : Number(buchbestandRaw.replace(',', '.'));
@@ -285,7 +286,7 @@ export function parseCsv(text) {
     const key = lagerplatz + '|' + itemcode;
     if (seen.has(key)) problems.push(`Doppelt: ${lagerplatz} / ${itemcode} (Aufgaben ${seen.get(key)} und ${n})`);
     else seen.set(key, n);
-    rows.push({ lagerplatz, itemcode, n, buchbestand });
+    rows.push({ lagerplatz, itemcode, n, buchbestand, whscode });
   });
 
   if (!rows.length) return { error: 'Keine Zeile erkannt' };
