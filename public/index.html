@@ -227,8 +227,8 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
     <div class="pane">
       <label for="fCsvFile">CSV-Datei wählen</label>
       <input class="field" id="fCsvFile" type="file" accept=".csv,text/csv">
-      <label for="fCsv">CSV: lagerplatz ; itemcode (leer = kein Artikel erwartet) ; aufgabe_num</label>
-      <textarea class="field" id="fCsv" placeholder="01-A-01;12345;1&#10;01-A-02;12346;1&#10;01-A-03;;1"></textarea>
+      <label for="fCsv">CSV: lagerplatz ; itemcode (leer = kein Artikel erwartet) ; aufgabe_num ; buchbestand (optional)</label>
+      <textarea class="field" id="fCsv" placeholder="01-A-01;12345;1;10&#10;01-A-02;12346;1;0&#10;01-A-03;;1;"></textarea>
       <button class="btn wide" id="btnImport">Laden und prüfen</button>
       <div class="err hide" id="importProblems" style="margin:12px 0 0;max-height:240px;overflow:auto"></div>
     </div>

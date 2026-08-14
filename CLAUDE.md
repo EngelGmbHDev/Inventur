@@ -104,14 +104,17 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   the loginname is a pseudonym like `user01`) must never leave the browser. `parseWorkers` on the
   server only ever reads the first two columns anyway, but the client-side trim means that data
   is never even transmitted, not just "not stored". Keep this in mind if the CSV format changes.
-- Task import (`POST /admin/import`, `lagerplatz;itemcode;aufgabe_num`) and worker import
-  (`POST /admin/import-workers`, `name;pincode`) are fully independent — separate buttons in the
-  UI, separate repo calls (`importRun` / `importWorkers`), neither touches the other's tables.
-  `parseCsv` rejects duplicate lagerplatz/itemcode pairs and flags any lagerplatz that spans two
-  tasks. `itemcode` may be empty — that represents a lagerplatz that's expected to be empty
-  (worker just confirms `menge=0`, or corrects the itemcode in place if something is actually
-  found there). Both imports fully replace their table for the run — re-importing workers wipes
-  everyone not in the new list, including anyone added individually via the worker-management page.
+- Task import (`POST /admin/import`, `lagerplatz;itemcode;aufgabe_num;buchbestand`) and worker
+  import (`POST /admin/import-workers`, `name;pincode`) are fully independent — separate buttons
+  in the UI, separate repo calls (`importRun` / `importWorkers`), neither touches the other's
+  tables. `parseCsv` rejects duplicate lagerplatz/itemcode pairs and flags any lagerplatz that
+  spans two tasks. `itemcode` may be empty — that represents a lagerplatz that's expected to be
+  empty (worker just confirms `menge=0`, or corrects the itemcode in place if something is
+  actually found there). `buchbestand` is optional and, unlike everything else in `lines`, is
+  **never sent to workers** (`getLines` doesn't select it) — it only shows up in the admin export
+  (`exportRows`), for the Lagerist's own evaluation. Both imports fully replace their table for
+  the run — re-importing workers wipes everyone not in the new list, including anyone added
+  individually via the worker-management page.
 - A line with an empty `itemcode` can only take `menge<=0` — a positive quantity requires an
   itemcode first (checked both client-side in `onEdit`, app.js, and server-side in the `lines`
   POST action, which silently drops offending updates rather than erroring). `0` stays valid so a
@@ -124,7 +127,7 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   task's lines.
 - If the item actually found at a lagerplatz differs from the import, the worker corrects the
   itemcode in place; the original expected value is preserved in `lines.itemcode_soll` (see
-  `setItemcode`) so the export can still show what was expected (`artikel_soll`, status
+  `setItemcode`) so the export can still show what was expected (`buchartikel`, status
   `geaendert`).
 - Extra items not in the import are added via `addLine` with `added=1`; only those can be removed
   again (`removeLine` requires `added=1`) — imported rows must stay and get closed out with

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS lines (
   itemcode_soll TEXT,              -- ursprünglicher Artikel, sobald geändert wurde
   added         INTEGER NOT NULL DEFAULT 0,  -- 1 = vom Mitarbeiter zusätzlich erfasst
   menge         REAL,
+  buchbestand   REAL,              -- Buchbestand aus dem Import, nur für Export/Lagerist — nie an Mitarbeiter ausgeben
   counted_at    TEXT
 );
 

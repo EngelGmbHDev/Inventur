@@ -66,10 +66,12 @@ node server/setpin.js admin NeuerCode123
 ## Ablauf
 
 1. Als Verwaltung anmelden → „Durchgang leeren", falls noch Daten vom letzten Mal vorliegen.
-2. CSV `lagerplatz;itemcode;aufgabe_num` und die Mitarbeiterliste `name;pincode` einfügen
-   → „Laden und prüfen". Jeder Mitarbeiter bekommt hier seinen eigenen Code (mind. 4 Zeichen,
-   im Klartext in der Datenbank — kein sensibler Login). Geprüft werden doppelte Paare und
-   Lagerplätze, die in zwei Aufgaben geraten sind.
+2. CSV `lagerplatz;itemcode;aufgabe_num;buchbestand` (die vierte Spalte ist optional, leer
+   lassen wenn kein Buchbestand vorliegt — sie wird nur im Ergebnis-Export gezeigt, nie an
+   Mitarbeiter) und die Mitarbeiterliste `name;pincode` einfügen → „Laden und prüfen". Jeder
+   Mitarbeiter bekommt hier seinen eigenen Code (mind. 4 Zeichen, im Klartext in der Datenbank —
+   kein sensibler Login). Geprüft werden doppelte Paare und Lagerplätze, die in zwei Aufgaben
+   geraten sind.
 3. Anzahl Aufgaben und Zeilen gegen die Quelle abgleichen.
 4. „Freigeben" — erst jetzt sind die Aufgaben auf den Telefonen sichtbar.
 5. Zum Schluss „Sperren", danach „CSV herunterladen".
@@ -78,7 +80,7 @@ node server/setpin.js admin NeuerCode123
 
 Liegt am Platz etwas anderes als auf der Liste, tippt der Mitarbeiter auf die
 Artikelnummer und korrigiert sie. Die ursprünglich erwartete Nummer bleibt in
-`lines.itemcode_soll` erhalten und steht im Export in der Spalte `artikel_soll`,
+`lines.itemcode_soll` erhalten und steht im Export in der Spalte `buchartikel`,
 Status `geaendert` — sonst wäre später nicht mehr erkennbar, dass der Sollartikel
 gar nicht am Platz war.
 
