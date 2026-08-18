@@ -117,6 +117,11 @@ export function createRepo(DB) {
       P('DELETE FROM tasks WHERE run_id=?', runId),
       P('DELETE FROM workers WHERE run_id=?', runId),
     ]),
+    clearTasks: (runId) => DB.batch([
+      P('DELETE FROM lines WHERE run_id=?', runId),
+      P('DELETE FROM tasks WHERE run_id=?', runId),
+    ]),
+    clearWorkers: (runId) => run('DELETE FROM workers WHERE run_id=?', runId),
     async importRun(runId, rows) {
       await DB.batch([
         P('DELETE FROM lines WHERE run_id=?', runId),

@@ -116,6 +116,10 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   replace their table for the run — re-importing workers wipes everyone not in the new list,
   including anyone added
   individually via the worker-management page.
+- Besides "Durchgang leeren" (`admin/reset`, wipes lines+tasks+workers together), there are two
+  narrower resets: `admin/reset-tasks` (lines+tasks only, also locks `open`) and
+  `admin/reset-workers` (workers only, leaves `open` alone) — for when only one side needs a
+  fresh start without nuking the other.
 - A line with an empty `itemcode` can only take `menge<=0` — a positive quantity requires an
   itemcode first (checked both client-side in `onEdit`, app.js, and server-side in the `lines`
   POST action, which silently drops offending updates rather than erroring). `0` stays valid so a

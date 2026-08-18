@@ -237,6 +237,17 @@ async function admin(seg, req, repo) {
     return json(200, { ok: true });
   }
 
+  if (cmd === 'reset-tasks' && req.method === 'POST') {
+    await repo.setSetting('open', '0');
+    await repo.clearTasks(RUN);
+    return json(200, { ok: true });
+  }
+
+  if (cmd === 'reset-workers' && req.method === 'POST') {
+    await repo.clearWorkers(RUN);
+    return json(200, { ok: true });
+  }
+
   if (cmd === 'export') {
     const rows = await repo.exportRows(RUN);
     const head = 'whscode;aufgabe;lagerplatz;itemcode;menge;buchbestand;buchartikel;status;gezaehlt_von;zeitpunkt\n';

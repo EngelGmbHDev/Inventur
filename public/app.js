@@ -527,6 +527,19 @@ $('btnReset').onclick = async () => {
   loadWorkerList();
 };
 
+$('btnResetTasks').onclick = async () => {
+  if (!confirm('Alle Aufgaben und erfassten Mengen löschen? Die Mitarbeiterliste bleibt erhalten, die Erfassung wird gesperrt.')) return;
+  await api('/admin/reset-tasks', { body: {} });
+  toast('Aufgaben geleert'); openAdmin();
+};
+
+$('btnResetWorkers').onclick = async () => {
+  if (!confirm('Die komplette Mitarbeiterliste löschen? Aufgaben und erfasste Mengen bleiben erhalten.')) return;
+  await api('/admin/reset-workers', { body: {} });
+  toast('Mitarbeiterliste geleert');
+  loadWorkerList();
+};
+
 // ── Start ─────────────────────────────────────────────────────────────────
 function esc(s) { return String(s ?? '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
 

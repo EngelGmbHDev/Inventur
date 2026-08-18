@@ -135,6 +135,13 @@ export function createRepo(path, schemaPath) {
         run('DELETE FROM workers WHERE run_id=?', runId);
       });
     },
+    clearTasks(runId) {
+      tx(() => {
+        run('DELETE FROM lines WHERE run_id=?', runId);
+        run('DELETE FROM tasks WHERE run_id=?', runId);
+      });
+    },
+    clearWorkers: (runId) => run('DELETE FROM workers WHERE run_id=?', runId),
     importRun(runId, rows) {
       const insL = db.prepare('INSERT INTO lines(run_id,n,lagerplatz,itemcode,buchbestand,whscode) VALUES(?,?,?,?,?,?)');
       tx(() => {
