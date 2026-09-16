@@ -104,18 +104,24 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   the loginname is a pseudonym like `user01`) must never leave the browser. `parseWorkers` on the
   server only ever reads the first two columns anyway, but the client-side trim means that data
   is never even transmitted, not just "not stored". Keep this in mind if the CSV format changes.
-- Task import (`POST /admin/import`, `whscode;lagerplatz;itemcode;aufgabe_num;buchbestand`) and
-  worker import (`POST /admin/import-workers`, `name;pincode`) are fully independent — separate
-  buttons in the UI, separate repo calls (`importRun` / `importWorkers`), neither touches the
-  other's tables. `parseCsv` rejects duplicate lagerplatz/itemcode pairs and flags any lagerplatz
-  that spans two tasks. `itemcode` may be empty — that represents a lagerplatz that's expected to
-  be empty (worker just confirms `menge=0`, or corrects the itemcode in place if something is
-  actually found there). `whscode` and `buchbestand` are both optional and, unlike everything else
+- Task import (`POST /admin/import`,
+  `whscode;lagerplatz;itemcode;aufgabe_num;buchbestand;price`) and worker import
+  (`POST /admin/import-workers`, `name;pincode`) are fully independent — separate buttons in the
+  UI, separate repo calls (`importRun` / `importWorkers`), neither touches the other's tables.
+  `parseCsv` rejects duplicate lagerplatz/itemcode pairs and flags any lagerplatz that spans two
+  tasks. `itemcode` may be empty — that represents a lagerplatz that's expected to be empty
+  (worker just confirms `menge=0`, or corrects the itemcode in place if something is actually
+  found there). `whscode`, `buchbestand` and `price` are all optional and, unlike everything else
   in `lines`, are **never sent to workers** (`getLines` doesn't select them) — they only show up
-  in the admin export (`exportRows`), for the Lagerist's own evaluation. Both imports fully
-  replace their table for the run — re-importing workers wipes everyone not in the new list,
-  including anyone added
-  individually via the worker-management page.
+  in the admin export (`exportRows`), for the Lagerist's own evaluation: `price` (price/unit) and
+  a computed `differenz_wert` column (`(buchbestand - menge) * price`, rounded to 2 decimals,
+  blank unless all three of menge/buchbestand/price are present) are built in the `export`
+  handler, not stored. Both imports fully replace their table for the run — re-importing workers
+  wipes everyone not in the new list, including anyone added individually via the
+  worker-management page.
+- Export CSV numbers use a German decimal comma (`.` → `,`, via the `de()` helper in the
+  `export` handler) since German Excel treats `.` as a date separator — apply this to any new
+  numeric export column, not just existing ones.
 - Besides "Durchgang leeren" (`admin/reset`, wipes lines+tasks+workers together), there are two
   narrower resets: `admin/reset-tasks` (lines+tasks only, also locks `open`) and
   `admin/reset-workers` (workers only, leaves `open` alone) — for when only one side needs a

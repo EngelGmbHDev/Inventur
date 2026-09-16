@@ -250,15 +250,23 @@ async function admin(seg, req, repo) {
 
   if (cmd === 'export') {
     const rows = await repo.exportRows(RUN);
-    const head = 'whscode;aufgabe;lagerplatz;itemcode;menge;buchbestand;buchartikel;status;gezaehlt_von;zeitpunkt\n';
-    const body = rows.map((r) => [
-      r.whscode ?? '', r.n, r.lagerplatz, r.itemcode,
-      r.menge === null ? '' : String(r.menge).replace('.', ','),
-      r.buchbestand === null ? '' : String(r.buchbestand).replace('.', ','),
-      r.itemcode_soll ?? '',
-      r.added ? 'neu' : (r.itemcode_soll ? 'geaendert' : ''),
-      r.worker ?? '', r.counted_at ?? '',
-    ].join(';')).join('\n');
+    const head = 'whscode;aufgabe;lagerplatz;itemcode;menge;buchbestand;price;differenz_wert;buchartikel;status;gezaehlt_von;zeitpunkt\n';
+    const de = (x) => String(x).replace('.', ',');
+    const body = rows.map((r) => {
+      const diff = r.menge !== null && r.buchbestand !== null && r.price !== null
+        ? Math.round((r.buchbestand - r.menge) * r.price * 100) / 100
+        : null;
+      return [
+        r.whscode ?? '', r.n, r.lagerplatz, r.itemcode,
+        r.menge === null ? '' : de(r.menge),
+        r.buchbestand === null ? '' : de(r.buchbestand),
+        r.price === null ? '' : de(r.price),
+        diff === null ? '' : de(diff),
+        r.itemcode_soll ?? '',
+        r.added ? 'neu' : (r.itemcode_soll ? 'geaendert' : ''),
+        r.worker ?? '', r.counted_at ?? '',
+      ].join(';');
+    }).join('\n');
     return {
       status: 200,
       text: '\uFEFF' + head + body,
@@ -285,19 +293,21 @@ export function parseCsv(text) {
 
   raw.forEach((line, i) => {
     const c = line.split(delim).map((s) => s.trim().replace(/^"|"$/g, ''));
-    const [whscodeRaw, lagerplatz, itemcodeRaw, aufgabe, buchbestandRaw] = c;
+    const [whscodeRaw, lagerplatz, itemcodeRaw, aufgabe, buchbestandRaw, priceRaw] = c;
     const whscode = whscodeRaw || null;
     const itemcode = itemcodeRaw ?? '';
     const n = Number(aufgabe);
     const buchbestand = !buchbestandRaw ? null : Number(buchbestandRaw.replace(',', '.'));
-    if (!lagerplatz || !Number.isInteger(n) || (buchbestand !== null && !Number.isFinite(buchbestand))) {
+    const price = !priceRaw ? null : Number(priceRaw.replace(',', '.'));
+    if (!lagerplatz || !Number.isInteger(n) || (buchbestand !== null && !Number.isFinite(buchbestand))
+        || (price !== null && !Number.isFinite(price))) {
       problems.push(`Zeile ${i + 1}: ${line.slice(0, 60)}`);
       return;
     }
     const key = lagerplatz + '|' + itemcode;
     if (seen.has(key)) problems.push(`Doppelt: ${lagerplatz} / ${itemcode} (Aufgaben ${seen.get(key)} und ${n})`);
     else seen.set(key, n);
-    rows.push({ lagerplatz, itemcode, n, buchbestand, whscode });
+    rows.push({ lagerplatz, itemcode, n, buchbestand, whscode, price });
   });
 
   if (!rows.length) return { error: 'Keine Zeile erkannt' };

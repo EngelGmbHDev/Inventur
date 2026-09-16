@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS lines (
   menge         REAL,
   buchbestand   REAL,              -- Buchbestand aus dem Import, nur für Export/Lagerist — nie an Mitarbeiter ausgeben
   whscode       TEXT,              -- Lagercode aus dem Import, nur für Export/Lagerist — nie an Mitarbeiter ausgeben
+  price         REAL,              -- Preis/Stück aus dem Import, nur für Export/Lagerist — nie an Mitarbeiter ausgeben
   counted_at    TEXT
 );
 

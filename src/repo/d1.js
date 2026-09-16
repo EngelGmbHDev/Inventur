@@ -129,8 +129,8 @@ export function createRepo(DB) {
       ]);
       for (const part of chunk(rows, 400))
         await DB.batch(part.map((r) =>
-          P('INSERT INTO lines(run_id,n,lagerplatz,itemcode,buchbestand,whscode) VALUES(?,?,?,?,?,?)',
-            runId, r.n, r.lagerplatz, r.itemcode, r.buchbestand, r.whscode)));
+          P('INSERT INTO lines(run_id,n,lagerplatz,itemcode,buchbestand,whscode,price) VALUES(?,?,?,?,?,?,?)',
+            runId, r.n, r.lagerplatz, r.itemcode, r.buchbestand, r.whscode, r.price)));
       await run(`INSERT INTO tasks(run_id,n,von,bis,cnt)
                  SELECT ?, n, MIN(lagerplatz), MAX(lagerplatz), COUNT(*)
                  FROM lines WHERE run_id=? GROUP BY n`, runId, runId);
@@ -167,7 +167,7 @@ export function createRepo(DB) {
       };
     },
     exportRows: (runId) =>
-      all(`SELECT l.n, l.lagerplatz, l.itemcode, l.itemcode_soll, l.added, l.menge, l.buchbestand, l.whscode, l.counted_at, t.worker
+      all(`SELECT l.n, l.lagerplatz, l.itemcode, l.itemcode_soll, l.added, l.menge, l.buchbestand, l.whscode, l.price, l.counted_at, t.worker
            FROM lines l LEFT JOIN tasks t ON t.run_id=l.run_id AND t.n=l.n
            WHERE l.run_id=? ORDER BY l.n, l.id`, runId),
   };
