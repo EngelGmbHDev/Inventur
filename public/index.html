@@ -72,6 +72,9 @@ main{padding:14px 14px calc(env(safe-area-inset-bottom) + 100px)}
 .tag.neu{background:var(--ink);color:#fff}
 .row .rm{background:none;border:1px solid var(--line);border-radius:6px;
   width:38px;height:38px;font-size:20px;color:var(--muted);flex:none}
+.row .plus{background:none;border:1px solid var(--line);border-radius:6px;
+  width:38px;height:38px;font-size:20px;font-weight:700;color:var(--orange);flex:none}
+.row .plus:active{background:var(--line)}
 
 .addpane{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:14px;margin-top:16px}
 .addpane h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
@@ -178,6 +181,8 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
         <li>Eine freie Aufgabe antippen — sie gehört danach nur Ihnen.</li>
         <li>Pro Lagerplatz die gezählte Menge eintragen. Achtung: Nicht jeder Lagerplatz vor Ort steht in
           der Liste — inaktive Plätze fehlen absichtlich, eine Lücke in der Nummerierung ist also normal.</li>
+        <li>Liegen mehrere Kartons an einem Platz? Mit der Taste „+" neben dem Feld lassen sich mehrere
+          Zahlen addieren, z. B. 14 + 22 + 55 — die Summe erscheint beim Bestätigen automatisch im Feld.</li>
         <li>Liegt ein anderer Artikel dort als erwartet? Auf die Artikelnummer tippen (✎) und korrigieren.</li>
         <li>Liegt zusätzlich noch etwas dort? Ganz unten „Zusätzlicher Artikel am Platz" nutzen.</li>
         <li>Farbe am linken Rand: grau = noch nicht gezählt, gelb = erfasst aber noch nicht übertragen, grün = gespeichert.</li>

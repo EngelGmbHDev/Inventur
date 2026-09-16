@@ -149,6 +149,7 @@ function renderLines() {
       <span class="lp">${esc(l.lagerplatz)}
         <button class="ic" data-edit="${l.id}">${l.itemcode ? esc(l.itemcode) : 'kein Artikel erwartet'}<span class="pen">✎</span></button>
         ${tag}</span>
+      <button class="plus" data-plus="${l.id}" tabindex="-1" aria-label="Wert addieren (mehrere Kartons)">+</button>
       <input inputmode="decimal" enterkeyhint="next" value="${val === '' ? '' : esc(String(val))}">
       ${l.added ? `<button class="rm" data-rm="${l.id}" aria-label="Zeile entfernen">×</button>` : ''}
     </div>`;
@@ -168,10 +169,24 @@ function renderLines() {
   const inputs = [...$('lineList').querySelectorAll('.row input')];
   inputs.forEach((inp, i) => {
     inp.onchange = () => onEdit(inp);
-    inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); inputs[i + 1]?.focus(); } };
+    inp.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); inputs[i + 1]?.focus(); }
+      // '=' tippen wertet die Summe sofort aus, ohne zum nächsten Feld zu springen —
+      // für externe Tastaturen/Scanner, die kein Enter senden.
+      if (e.key === '=') { e.preventDefault(); inp.blur(); inp.focus(); }
+    };
   });
   for (const b of $('lineList').querySelectorAll('[data-edit]')) b.onclick = () => editItem(Number(b.dataset.edit));
   for (const b of $('lineList').querySelectorAll('[data-rm]')) b.onclick = () => removeLine(Number(b.dataset.rm));
+  for (const b of $('lineList').querySelectorAll('[data-plus]')) {
+    b.onclick = () => {
+      const inp = b.nextElementSibling;
+      const v = inp.value.trim();
+      if (v !== '' && !v.endsWith('+')) inp.value = v + '+';
+      inp.focus();
+      inp.setSelectionRange(inp.value.length, inp.value.length);
+    };
+  }
   $('aAdd').onclick = addLine;
 
   if (Object.keys(buf).length) { Object.keys(buf).forEach((id) => S.queue.add(Number(id))); flushSoon(200); }
@@ -244,10 +259,28 @@ async function removeLine(id) {
   } catch (e) { toast(e.message); }
 }
 
+// Mehrere Kartons an einem Lagerplatz: "14+22+55" wird beim Verlassen des
+// Feldes (Enter/Tab/=) zur Summe zusammengefasst, statt als Ganzes verworfen.
+function sumExpr(v) {
+  const parts = v.split('+').map((s) => s.trim());
+  if (parts.some((p) => p === '')) return NaN;
+  const nums = parts.map((p) => Number(p.replace(',', '.')));
+  return nums.every(Number.isFinite) ? nums.reduce((a, b) => a + b, 0) : NaN;
+}
+
 function onEdit(inp) {
   const row = inp.closest('.row');
   const id = Number(row.dataset.id);
-  const raw = inp.value.trim().replace(',', '.');
+  let trimmed = inp.value.trim();
+  let raw;
+  if (trimmed.includes('+')) {
+    const sum = sumExpr(trimmed);
+    if (!Number.isFinite(sum)) { toast('Rechnung unvollständig'); inp.focus(); return; }
+    raw = String(sum);
+    inp.value = raw;
+  } else {
+    raw = trimmed.replace(',', '.');
+  }
   if (raw !== '' && !Number.isFinite(Number(raw))) { toast('Bitte Zahl eingeben'); inp.focus(); return; }
 
   const num = raw === '' ? null : Number(raw);

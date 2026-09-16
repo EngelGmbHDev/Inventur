@@ -126,6 +126,13 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
   narrower resets: `admin/reset-tasks` (lines+tasks only, also locks `open`) and
   `admin/reset-workers` (workers only, leaves `open` alone) — for when only one side needs a
   fresh start without nuking the other.
+- A lagerplatz can hold several cartons, so the quantity field (`.row input`, app.js) accepts a
+  `+`-separated expression like `14+22+55` and sums it client-side (`sumExpr`, in `onEdit`) when
+  the field is left (Enter, tab, blur, or typing `=`) — the server only ever sees the already-summed
+  number, `saveLines`/the `lines` POST action know nothing about the `+` syntax. A `+` button next
+  to the input inserts the operator, since the on-screen numeric keypad from `inputmode="decimal"`
+  has no `+` key. An incomplete expression (trailing `+`) is rejected client-side with a toast
+  rather than silently saved.
 - A line with an empty `itemcode` can only take `menge<=0` — a positive quantity requires an
   itemcode first (checked both client-side in `onEdit`, app.js, and server-side in the `lines`
   POST action, which silently drops offending updates rather than erroring). `0` stays valid so a
