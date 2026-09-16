@@ -85,6 +85,8 @@ main{padding:14px 14px calc(env(safe-area-inset-bottom) + 100px)}
   padding:13px;font-weight:600;font-size:15px}
 .row input{width:92px;padding:12px 8px;text-align:right;
   font:600 21px/1 var(--mono);border:2px solid var(--line);border-radius:6px;background:#fff}
+.row[data-s="dirty"] input{border-color:var(--signal)}
+.row[data-s="saved"] input{border-color:var(--ok)}
 .row input:focus{border-color:var(--ink);outline:none}
 
 /* ── Fußleiste ─────────────────────────────────────── */
@@ -108,6 +110,13 @@ select.field{letter-spacing:normal;font-family:var(--sans)}
 textarea.field{letter-spacing:normal;font-size:13px;min-height:150px;line-height:1.5}
 .link{display:block;margin:14px auto 0;background:none;border:none;padding:0;
   color:var(--muted);text-decoration:underline;font-size:14px}
+.btn.help{background:#fff;border:2px solid var(--orange);color:var(--orange);margin-top:14px}
+.btn.help:active{background:var(--orange);color:#fff}
+
+.help-list{margin:0;padding-left:22px;color:var(--muted);font-size:14px;line-height:1.7}
+.help-list li{padding-left:2px}
+.help-list li::marker{font-weight:700;color:var(--ink)}
+.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin:0 3px -1px 3px}
 
 /* ── Verwaltung ────────────────────────────────────── */
 .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
@@ -168,14 +177,14 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
       <button class="btn wide" id="btnLogin">Anmelden</button>
     </div>
     <p class="note" style="margin-top:14px">Den Zugangscode erhalten Sie vor Beginn der Inventur von der Leitung.</p>
-    <button class="link" id="btnHelp">Anleitung anzeigen</button>
+    <button class="btn wide help" id="btnHelp">Anleitung anzeigen</button>
   </section>
 
   <!-- Hilfe -->
   <section id="vHelp" class="hide">
     <div class="pane">
       <h2 style="margin-top:0">So funktioniert's</h2>
-      <ol style="margin:0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.7">
+      <ol class="help-list">
         <li>Ihren Namen aus der Liste wählen.</li>
         <li>Ihren persönlichen Zugangscode eingeben — den erhalten Sie von der Leitung.</li>
         <li>Eine freie Aufgabe antippen — sie gehört danach nur Ihnen.</li>
@@ -185,7 +194,10 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:22px 0 10
           Zahlen addieren, z. B. 14 + 22 + 55 — die Summe erscheint beim Bestätigen automatisch im Feld.</li>
         <li>Liegt ein anderer Artikel dort als erwartet? Auf die Artikelnummer tippen (✎) und korrigieren.</li>
         <li>Liegt zusätzlich noch etwas dort? Ganz unten „Zusätzlicher Artikel am Platz" nutzen.</li>
-        <li>Farbe am linken Rand: grau = noch nicht gezählt, gelb = erfasst aber noch nicht übertragen, grün = gespeichert.</li>
+        <li>Farbe am linken Rand der Zeile zeigt den Stand:
+          <span class="dot" style="background:var(--line)"></span><b>grau</b> = noch nicht gezählt,
+          <span class="dot" style="background:var(--signal)"></span><b>gelb</b> = erfasst, aber noch nicht übertragen,
+          <span class="dot" style="background:var(--ok)"></span><b>grün</b> = gespeichert.</li>
         <li>Alles erfasst? Unten auf „Abgeben" tippen.</li>
         <li>Aus Versehen die falsche Aufgabe geöffnet? „Aufgabe verlassen" gibt sie wieder frei.</li>
         <li>Teilen Sie sich ein Gerät mit Kolleginnen/Kollegen? Bitte am Ende „Ausloggen" nicht vergessen.</li>
