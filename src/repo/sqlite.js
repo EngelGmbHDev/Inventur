@@ -120,6 +120,10 @@ export function createRepo(path, schemaPath) {
         .map((r) => r.lagerplatz),
     countEmpty: (runId, n) =>
       get('SELECT COUNT(*) c FROM lines WHERE run_id=? AND n=? AND menge IS NULL', runId, n).c,
+    // Nur für den serverseitigen Abweichungs-Check (handlers.js) — buchbestand selbst
+    // wird nie an den Client zurückgegeben, siehe getLines.
+    getBuchbestand: (runId, n) =>
+      all('SELECT id, buchbestand FROM lines WHERE run_id=? AND n=?', runId, n),
     saveLines(runId, n, upd, ts) {
       const st = db.prepare('UPDATE lines SET menge=?, counted_at=? WHERE id=? AND run_id=? AND n=?');
       tx(() => { for (const l of upd) st.run(l.menge, l.menge === null ? null : ts, l.id, runId, n); });

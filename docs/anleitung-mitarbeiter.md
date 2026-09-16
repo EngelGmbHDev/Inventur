@@ -28,6 +28,7 @@
 | Grau | noch nicht gezählt |
 | Gelb | erfasst, aber noch nicht zum Server übertragen (z. B. kein Netz) |
 | Grün | gespeichert |
+| Braun | Abweichung vom erwarteten Bestand — bitte den Lagerplatz noch einmal nachzählen |
 
 Ohne Netzverbindung bleibt eine Zeile gelb und wird automatisch alle 15 Sekunden erneut versucht zu übertragen — nichts geht verloren, es muss nichts neu eingegeben werden.
 

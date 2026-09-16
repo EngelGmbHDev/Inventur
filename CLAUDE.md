@@ -122,6 +122,14 @@ There is no test suite, no linter, and no CI workflow configured in this repo.
 - Export CSV numbers use a German decimal comma (`.` → `,`, via the `de()` helper in the
   `export` handler) since German Excel treats `.` as a date separator — apply this to any new
   numeric export column, not just existing ones.
+- The `lines` POST action (saving a counted `menge`) also checks it against `buchbestand` and
+  returns a `warn` map of `{ lineId: true|false }` — never the `buchbestand` value itself, which
+  stays server-only via the dedicated `getBuchbestand` repo method (separate from `getLines`, so
+  it can't accidentally leak through the normal worker-facing line shape). The client
+  (`markDeviation`, app.js) shows a brown row/input border plus a "bitte nachzählen" note when
+  `warn[id]` is true, and clears it when the worker corrects the count to match. A line only gets
+  a flag when both `menge` and `buchbestand` are known — an unimported/empty `buchbestand` means
+  no check is possible, not a silent match.
 - Besides "Durchgang leeren" (`admin/reset`, wipes lines+tasks+workers together), there are two
   narrower resets: `admin/reset-tasks` (lines+tasks only, also locks `open`) and
   `admin/reset-workers` (workers only, leaves `open` alone) — for when only one side needs a

@@ -103,6 +103,10 @@ export function createRepo(DB) {
         .map((r) => r.lagerplatz),
     countEmpty: async (runId, n) =>
       (await first('SELECT COUNT(*) c FROM lines WHERE run_id=? AND n=? AND menge IS NULL', runId, n)).c,
+    // Nur für den serverseitigen Abweichungs-Check (handlers.js) — buchbestand selbst
+    // wird nie an den Client zurückgegeben, siehe getLines.
+    getBuchbestand: (runId, n) =>
+      all('SELECT id, buchbestand FROM lines WHERE run_id=? AND n=?', runId, n),
     async saveLines(runId, n, upd, ts) {
       if (!upd.length) return;
       await DB.batch(upd.map((l) =>

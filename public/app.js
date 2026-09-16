@@ -297,10 +297,27 @@ function onEdit(inp) {
   row.dataset.s = 'dirty';
   S.queue.add(id);
   refreshStat();
-  flushSoon();
+  flushSoon(350);   // zügig senden, damit die Abweichungsprüfung "sofort" wirkt
 }
 
 function flushSoon(ms = 900) { clearTimeout(S.timer); S.timer = setTimeout(flush, ms); }
+
+// Zeigt bei einer Abweichung zum (dem Mitarbeiter unbekannten) Buchbestand eine
+// braune Markierung und die Empfehlung, den Lagerplatz erneut zu zählen — der
+// Buchbestand selbst kommt nie beim Client an, nur dieses ja/nein je Zeile.
+function markDeviation(row, flagged) {
+  let note = row.querySelector('.devnote');
+  if (flagged) {
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'devnote';
+      note.textContent = 'Abweichung erkannt — bitte den Lagerplatz noch einmal nachzählen';
+      row.appendChild(note);
+    }
+  } else if (note) {
+    note.remove();
+  }
+}
 
 async function flush() {
   if (!S.task || !S.queue.size) return;
@@ -308,14 +325,18 @@ async function flush() {
   const ids = [...S.queue];
   const payload = ids.map((id) => ({ id, menge: buf[id] === '' ? null : buf[id] }));
   try {
-    await api(`/tasks/${S.task}/lines`, { body: { lines: payload } });
+    const d = await api(`/tasks/${S.task}/lines`, { body: { lines: payload } });
     for (const id of ids) {
       S.queue.delete(id);
       const line = S.lines.find((l) => l.id === id);
       if (line) line.menge = buf[id] === '' ? null : buf[id];
       delete buf[id];
       const row = $('lineList').querySelector(`.row[data-id="${id}"]`);
-      if (row) row.dataset.s = line && line.menge !== null ? 'saved' : '';
+      if (row) {
+        const flagged = line && line.menge !== null && d.warn?.[id] === true;
+        row.dataset.s = line && line.menge !== null ? (flagged ? 'warn' : 'saved') : '';
+        markDeviation(row, flagged);
+      }
     }
     writeBuf(S.task, buf);
     clearTimeout(S.retry); S.retry = null;

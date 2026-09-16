@@ -111,7 +111,17 @@ async function tasks(seg, req, repo, who) {
       // um einen laut Import leeren Lagerplatz als tatsächlich leer zu bestätigen.
       .filter((l) => l.menge === null || l.menge <= 0 || itemcodeById.get(l.id));
     await repo.saveLines(RUN, n, upd, now());
-    return json(200, { saved: upd.length });
+
+    // Abweichung zum Buchbestand prüfen — der Bestand selbst bleibt geheim, es geht nur
+    // ein ja/nein je Zeile an den Mitarbeiter zurück (siehe getBuchbestand-Kommentar).
+    const soll = await repo.getBuchbestand(RUN, n);
+    const sollById = new Map(soll.map((r) => [r.id, r.buchbestand]));
+    const warn = {};
+    for (const l of upd) {
+      const bb = sollById.get(l.id);
+      if (l.menge !== null && bb !== null && bb !== undefined) warn[l.id] = l.menge !== bb;
+    }
+    return json(200, { saved: upd.length, warn });
   }
 
   if (action === 'item' && req.method === 'POST') {
